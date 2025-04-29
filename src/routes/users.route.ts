@@ -1,6 +1,7 @@
 import express, { type Request, type Response, type Router } from "express";
 
 import usersService from "../services/users.service.ts";
+import authService from "../services/auth.service.ts";
 
 import { config } from "../config.ts";
 import {
@@ -8,6 +9,7 @@ import {
   type CreateUserResponseSchema,
   type CreateUserSchema,
 } from "../schemas/users.schema.ts";
+import { parseZodError } from "../utils/parse-zod-error.ts";
 
 const router: Router = express.Router();
 
@@ -20,12 +22,8 @@ router.post(
     try {
       const validated = await createUserSchema.safeParseAsync(req.body);
       if (!validated.success) {
-        const issues = validated.error.errors.map((err) => ({
-          message: err.message,
-          path: err.path.map((p) => p.toString()),
-        }));
+        const issues = parseZodError(validated.error);
 
-        console.log({ issues });
         res.status(400).send({
           success: false,
           message: "Failed to create user",
@@ -56,7 +54,7 @@ router.post(
         return;
       }
 
-      const token = usersService.createAuthenticationToken({
+      const token = authService.createAuthenticationToken({
         userId: newUser._id.toString(),
         email,
       });
