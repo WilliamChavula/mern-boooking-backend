@@ -5,6 +5,7 @@ import cors from "cors";
 import { connect } from "mongoose";
 import { config } from "./config.ts";
 import usersRoute from "./routes/users.route.ts";
+import authRoute from "./routes/auth.route.ts";
 
 // Initialize express app
 const app: Express = express();
@@ -21,6 +22,7 @@ app.get("/api/health", (_req: Request, res: Response) => {
 });
 
 app.use("/api/users", usersRoute);
+app.use("/api/auth", authRoute);
 
 // Error handling middleware
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
