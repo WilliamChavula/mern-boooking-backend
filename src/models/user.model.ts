@@ -1,3 +1,5 @@
+import bcrypt from "bcryptjs";
+
 import { model, Schema, Types } from "mongoose";
 
 export type UserType = {
@@ -19,6 +21,13 @@ const userSchema = new Schema<UserType>(
   },
   { timestamps: true },
 );
+
+userSchema.pre("save", async function (next) {
+  if (this.isModified("password")) {
+    this.password = await bcrypt.hash(this.password, 10);
+  }
+  next();
+});
 
 const User = model<UserType>("User", userSchema);
 export default User;

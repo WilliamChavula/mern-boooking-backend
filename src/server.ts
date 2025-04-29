@@ -4,6 +4,7 @@ import cors from "cors";
 
 import { connect } from "mongoose";
 import { config } from "./config.ts";
+import usersRoute from "./routes/users.route.ts";
 
 // Initialize express app
 const app: Express = express();
@@ -18,6 +19,8 @@ app.use(express.urlencoded({ extended: true }));
 app.get("/api/health", (_req: Request, res: Response) => {
   res.status(200).json({ status: "ok", message: "Server is running" });
 });
+
+app.use("/api/users", usersRoute);
 
 // Error handling middleware
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
