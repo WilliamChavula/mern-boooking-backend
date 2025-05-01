@@ -1,6 +1,12 @@
-import jwt from "jsonwebtoken";
-import { config } from "../config";
-export function verifyToken(req, res, next) {
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.verifyToken = verifyToken;
+const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+const config_1 = require("../config");
+function verifyToken(req, res, next) {
     const token = req.cookies["auth_token"];
     if (!token) {
         res.status(401).json({
@@ -10,7 +16,7 @@ export function verifyToken(req, res, next) {
         return;
     }
     try {
-        const decoded = jwt.verify(token, config.SECRET_KEY);
+        const decoded = jsonwebtoken_1.default.verify(token, config_1.config.SECRET_KEY);
         if (!decoded) {
             res.status(401).json({
                 success: false,

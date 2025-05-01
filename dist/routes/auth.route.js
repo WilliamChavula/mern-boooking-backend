@@ -1,17 +1,22 @@
-import express from "express";
-import { loginSchema, } from "../schemas/auth.schema";
-import { parseZodError } from "../utils/parse-zod-error";
-import usersService from "../services/users.service";
-import authService from "../services/auth.service";
-import { config } from "../config";
-const router = express.Router();
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = __importDefault(require("express"));
+const auth_schema_1 = require("../schemas/auth.schema");
+const parse_zod_error_1 = require("../utils/parse-zod-error");
+const users_service_1 = __importDefault(require("../services/users.service"));
+const auth_service_1 = __importDefault(require("../services/auth.service"));
+const config_1 = require("../config");
+const router = express_1.default.Router();
 const loginPayloadValidatorMiddleware = async (req, res, next) => {
-    const validated = await loginSchema.safeParseAsync(req.body);
+    const validated = await auth_schema_1.loginSchema.safeParseAsync(req.body);
     if (!validated.success) {
         res.status(400).json({
             success: false,
             message: "Failed to login",
-            error: parseZodError(validated.error),
+            error: (0, parse_zod_error_1.parseZodError)(validated.error),
         });
         return;
     }
@@ -20,7 +25,7 @@ const loginPayloadValidatorMiddleware = async (req, res, next) => {
 router.post("/login", loginPayloadValidatorMiddleware, async (req, res) => {
     const { email, password } = req.body;
     try {
-        const user = await usersService.findByEmail(email);
+        const user = await users_service_1.default.findByEmail(email);
         if (!user) {
             res.status(400).json({
                 success: false,
@@ -28,7 +33,7 @@ router.post("/login", loginPayloadValidatorMiddleware, async (req, res) => {
             });
             return;
         }
-        const passwordsMatch = authService.passwordCompare(password, user.password);
+        const passwordsMatch = auth_service_1.default.passwordCompare(password, user.password);
         if (!passwordsMatch) {
             res.status(400).json({
                 success: false,
@@ -36,13 +41,13 @@ router.post("/login", loginPayloadValidatorMiddleware, async (req, res) => {
             });
             return;
         }
-        const token = await authService.createAuthenticationToken({
+        const token = await auth_service_1.default.createAuthenticationToken({
             userId: user._id.toString(),
             email: user.email,
         });
         res.cookie("auth_token", token, {
             httpOnly: true,
-            secure: config.NODE_ENV === "production",
+            secure: config_1.config.NODE_ENV === "production",
             maxAge: 24 * 60 * 60 * 1000,
         });
         res.status(200).json({
@@ -68,5 +73,5 @@ router.post("/logout", async (_req, res) => {
     res.sendStatus(200);
     return;
 });
-export default router;
+exports.default = router;
 //# sourceMappingURL=auth.route.js.map
