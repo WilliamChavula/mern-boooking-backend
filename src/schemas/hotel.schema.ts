@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-const createHotelSchema = z.object({
+export const createHotelSchema = z.object({
   name: z
     .string({ message: "Name cannot be blank." })
     .min(3, "Name cannot be less than 3 characters.")
@@ -47,6 +47,13 @@ const createHotelSchemaSuccessResponse = z.object({
 const createHotelSchemaFailedResponse = z.object({
   success: z.literal(false),
   message: z.string(),
+  error: z
+    .object({
+      message: z.string(),
+      path: z.string().array(),
+    })
+    .array()
+    .optional(),
 });
 
 export type CreateHotelPayload = z.infer<typeof createHotelSchema>;

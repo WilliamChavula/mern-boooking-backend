@@ -7,10 +7,13 @@ import type { Request, Response, Router } from "express";
 import { createHotel } from "../services/my-hotels.service";
 import { verifyToken } from "../middleware/auth.middleware";
 
-import type {
+import {
   CreateHotelPayload,
+  createHotelSchema,
   CreateHotelSchemaResponse,
 } from "../schemas/hotel.schema";
+import { ZodError } from "zod";
+import { parseZodError } from "../utils/parse-zod-error";
 
 const router: Router = express.Router();
 
@@ -31,7 +34,7 @@ router.post(
   ) => {
     try {
       const imageFiles = req.files as Express.Multer.File[];
-      const newHotel = req.body;
+      const newHotel = await createHotelSchema.parseAsync(req.body);
 
       // upload images to cloudinary
       const promises = imageFiles.map(async (image) => {
@@ -55,6 +58,15 @@ router.post(
 
       return;
     } catch (e) {
+      if (e instanceof ZodError) {
+        const issues = parseZodError(e);
+
+        res.status(400).json({
+          success: false,
+          message: "Failed to create a hotel.",
+          error: issues,
+        });
+      }
       console.log("Error creating Hotels", e);
       res.status(500).send({
         success: false,
