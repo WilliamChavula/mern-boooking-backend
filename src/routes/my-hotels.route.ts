@@ -1,12 +1,16 @@
-import type { Request, Response, Router } from "express";
 import express from "express";
 import multer from "multer";
 import { v2 as cloudinary } from "cloudinary";
+
+import type { Request, Response, Router } from "express";
+
+import { createHotel } from "../services/my-hotels.service";
+import { verifyToken } from "../middleware/auth.middleware";
+
 import type {
   CreateHotelPayload,
   CreateHotelSchemaResponse,
 } from "../schemas/hotel.schema";
-import { createHotel } from "../services/my-hotels.service";
 
 const router: Router = express.Router();
 
@@ -19,6 +23,7 @@ const multerUpload = multer({
 
 router.post(
   "/",
+  verifyToken,
   multerUpload.array("imageFiles", 6),
   async (
     req: Request<{}, {}, CreateHotelPayload>,
@@ -58,3 +63,5 @@ router.post(
     }
   },
 );
+
+export default router;
