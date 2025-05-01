@@ -1,13 +1,13 @@
 {
   "compilerOptions": {
-    "target": "ESNext",
-    "module": "CommonJS",
-    "moduleResolution": "node",
-    "lib": ["ESNext"],
+    "target": "ES2022",
+    "module": "CommonJS", // Use CommonJS instead of ES2020 or NodeNext
+    "moduleResolution": "node", // Node.js-style resolution for extensionless imports
+    "lib": ["ES2022"],
     "outDir": "./dist",
     "rootDir": "./src",
     "strict": true,
-    "esModuleInterop": true,
+    "esModuleInterop": true, // For better CommonJS/ESM interoperability
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "sourceMap": true,
@@ -17,12 +17,12 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noImplicitReturns": true,
-    "noFallthroughCasesInSwitch": true,
+    "noFallthroughCasesInSwitch": true
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"],
   "ts-node": {
-    "esm": true,
-    "experimentalSpecifierResolution": "node"
+    "esm": false, // Explicitly disable ESM mode
+    "transpileOnly": true // Optional: Faster execution by skipping type checking
   }
 }
