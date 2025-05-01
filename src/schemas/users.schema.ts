@@ -38,7 +38,25 @@ const createUserFailureResponseSchema = z.object({
     .optional(),
 });
 
+const tokenValidResponseSchema = z.object({
+  success: z.literal(true),
+  message: z.string(),
+  data: z.object({
+    userId: z.string(),
+    email: z.string(),
+  }),
+});
+
+const tokenInvalidResponseSchema = z.object({
+  success: z.literal(false),
+  message: z.string(),
+});
+
 export type CreateUserSchema = z.infer<typeof createUserSchema>;
 export type CreateUserResponseSchema =
   | z.infer<typeof createUserSuccessResponseSchema>
   | z.infer<typeof createUserFailureResponseSchema>;
+
+export type TokenResponseSchema =
+  | z.infer<typeof tokenValidResponseSchema>
+  | z.infer<typeof tokenInvalidResponseSchema>;
