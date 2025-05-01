@@ -1,5 +1,6 @@
 import express from "express";
 import type { Request, Response, NextFunction, Express } from "express";
+import cookieParser from "cookie-parser";
 import cors from "cors";
 
 import { connect } from "mongoose";
@@ -12,7 +13,13 @@ const app: Express = express();
 const port = config.PORT;
 
 // Middleware
-app.use(cors());
+app.use(
+  cors({
+    origin: config.FRONTEND_URL,
+    credentials: true,
+  }),
+);
+app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
