@@ -13,6 +13,7 @@ export type HotelType = {
   pricePerNight: number;
   starRating: number;
   imageUrls: string[];
+  facilities: string[];
   createdAt: Date;
   updatedAt: Date;
 };
@@ -30,6 +31,7 @@ const HotelSchema = new Schema<HotelType>(
     pricePerNight: { type: Number, required: true },
     starRating: { type: Number, required: true, min: 1, max: 5 },
     imageUrls: [{ type: String, required: true }],
+    facilities: [{ type: String, required: true }],
   },
   { timestamps: true },
 );

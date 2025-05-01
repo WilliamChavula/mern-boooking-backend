@@ -30,6 +30,7 @@ export const createHotelSchema = z.object({
     .max(5, "Rating cannot be more than 5"),
   userId: z.string().optional(),
   imageUrls: z.string().array().optional(),
+  facilities: z.string().array().optional(),
 });
 
 const createHotelSchemaSuccessResponse = z.object({
