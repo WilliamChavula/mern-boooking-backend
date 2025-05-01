@@ -9,11 +9,11 @@ import {
   loginSchema,
   type LoginResponse,
   type LoginSchema,
-} from "../schemas/auth.schema.ts";
-import { parseZodError } from "../utils/parse-zod-error.ts";
-import usersService from "../services/users.service.ts";
-import authService from "../services/auth.service.ts";
-import { config } from "../config.ts";
+} from "../schemas/auth.schema";
+import { parseZodError } from "../utils/parse-zod-error";
+import usersService from "../services/users.service";
+import authService from "../services/auth.service";
+import { config } from "../config";
 
 const router: Router = express.Router();
 

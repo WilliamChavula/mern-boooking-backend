@@ -1,8 +1,8 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
+    "module": "ES2020",
+    "moduleResolution": "node",
     "lib": ["ES2022"],
     "outDir": "./dist",
     "rootDir": "./src",
@@ -18,8 +18,9 @@
     "noUnusedParameters": true,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
-    "allowImportingTsExtensions": true,
-    "noEmit": true
+//    "allowImportingTsExtensions": true,
+//    "emitDeclarationOnly": true
+    //    "noEmit": true
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"],

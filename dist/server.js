@@ -1,0 +1,52 @@
+import express from "express";
+import cookieParser from "cookie-parser";
+import cors from "cors";
+import { connect } from "mongoose";
+import { config } from "./config";
+import usersRoute from "./routes/users.route";
+import authRoute from "./routes/auth.route";
+// Initialize express app
+const app = express();
+const port = config.PORT;
+// Middleware
+app.use(cors({
+    origin: config.FRONTEND_URL,
+    credentials: true,
+}));
+app.use(cookieParser());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+// Health check route
+app.get("/api/health", (_req, res) => {
+    res.status(200).json({ status: "ok", message: "Server is running" });
+});
+app.use("/api/users", usersRoute);
+app.use("/api/auth", authRoute);
+// Error handling middleware
+app.use((err, _req, res, _next) => {
+    console.error("Unhandled error:", err);
+    res.status(500).json({
+        status: "error",
+        message: "An unexpected error occurred",
+    });
+});
+// Start the server
+const startServer = async () => {
+    try {
+        // Connect to MongoDB if connection string is provided
+        await connect(config.MONGODB_URI);
+        console.log("Connected to MongoDB");
+        app.listen(port, (error) => {
+            if (error) {
+                console.log(error);
+            }
+            console.log(`Server running on port ${port}`);
+        });
+    }
+    catch (error) {
+        console.error("Failed to start server:", error);
+        process.exit(1);
+    }
+};
+export { app, startServer };
+//# sourceMappingURL=server.js.map

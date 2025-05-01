@@ -1,6 +1,6 @@
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
-import { config } from "../config.ts";
+import { config } from "../config";
 
 const createAuthenticationToken = async (user: {
   userId: string;

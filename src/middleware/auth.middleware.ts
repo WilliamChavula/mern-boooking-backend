@@ -1,8 +1,8 @@
 import jwt, { type JwtPayload } from "jsonwebtoken";
 import type { Request, Response, NextFunction } from "express";
 
-import { config } from "../config.ts";
-import type { TokenResponseSchema } from "../schemas/users.schema.ts";
+import { config } from "../config";
+import type { TokenResponseSchema } from "../schemas/users.schema";
 
 declare global {
   namespace Express {

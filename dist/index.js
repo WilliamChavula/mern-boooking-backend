@@ -1,5 +1,5 @@
 import { startServer } from "./server";
-
 (async () => {
-  await startServer();
+    await startServer();
 })();
+//# sourceMappingURL=index.js.map

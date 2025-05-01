@@ -1,7 +1,7 @@
-import User from "../models/user.model.ts";
+import User from "../models/user.model";
 
-import type { UserType } from "../models/user.model.ts";
-import type { CreateUserSchema } from "../schemas/users.schema.ts";
+import type { UserType } from "../models/user.model";
+import type { CreateUserSchema } from "../schemas/users.schema";
 
 const findByEmail = async (email: string): Promise<UserType | null> => {
   return User.findOne({ email });

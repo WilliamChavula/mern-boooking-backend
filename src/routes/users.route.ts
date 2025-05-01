@@ -1,17 +1,17 @@
 import express, { type Request, type Response, type Router } from "express";
 
-import usersService from "../services/users.service.ts";
-import authService from "../services/auth.service.ts";
+import usersService from "../services/users.service";
+import authService from "../services/auth.service";
 
-import { config } from "../config.ts";
+import { config } from "../config";
 import {
   createUserSchema,
   type CreateUserResponseSchema,
   type CreateUserSchema,
   type TokenResponseSchema,
-} from "../schemas/users.schema.ts";
-import { parseZodError } from "../utils/parse-zod-error.ts";
-import { verifyToken } from "../middleware/auth.middleware.ts";
+} from "../schemas/users.schema";
+import { parseZodError } from "../utils/parse-zod-error";
+import { verifyToken } from "../middleware/auth.middleware";
 
 const router: Router = express.Router();
 

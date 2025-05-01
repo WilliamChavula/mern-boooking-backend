@@ -4,9 +4,9 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 
 import { connect } from "mongoose";
-import { config } from "./config.ts";
-import usersRoute from "./routes/users.route.ts";
-import authRoute from "./routes/auth.route.ts";
+import { config } from "./config";
+import usersRoute from "./routes/users.route";
+import authRoute from "./routes/auth.route";
 
 // Initialize express app
 const app: Express = express();
