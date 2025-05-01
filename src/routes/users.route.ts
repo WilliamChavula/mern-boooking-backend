@@ -8,8 +8,10 @@ import {
   createUserSchema,
   type CreateUserResponseSchema,
   type CreateUserSchema,
+  type TokenResponseSchema,
 } from "../schemas/users.schema.ts";
 import { parseZodError } from "../utils/parse-zod-error.ts";
+import { verifyToken } from "../middleware/auth.middleware.ts";
 
 const router: Router = express.Router();
 
@@ -54,7 +56,7 @@ router.post(
         return;
       }
 
-      const token = authService.createAuthenticationToken({
+      const token = await authService.createAuthenticationToken({
         userId: newUser._id.toString(),
         email,
       });
@@ -80,6 +82,20 @@ router.post(
       console.log({ error: e });
       res.status(500).json({ success: false, message: "Something went wrong" });
     }
+  },
+);
+
+router.get(
+  "/validate-token",
+  verifyToken,
+  async (req: Request, res: Response<TokenResponseSchema>) => {
+    res.status(200).json({
+      success: true,
+      message: "User validated successfully",
+      data: req.user,
+    });
+
+    return;
   },
 );
 
