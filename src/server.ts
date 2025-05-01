@@ -3,6 +3,8 @@ import type { Request, Response, NextFunction, Express } from "express";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 
+import { v2 as cloudinary } from "cloudinary";
+
 import { connect } from "mongoose";
 import { config } from "./config";
 import usersRoute from "./routes/users.route";
@@ -46,6 +48,13 @@ const startServer = async () => {
     // Connect to MongoDB if connection string is provided
     await connect(config.MONGODB_URI);
     console.log("Connected to MongoDB");
+
+    cloudinary.config({
+      cloud_name: config.CLOUDINARY_NAME,
+      api_key: config.CLOUDINARY_API_KEY,
+      api_secret: config.CLOUDINARY_API_SECRET,
+      secure: true,
+    });
 
     app.listen(port, (error) => {
       if (error) {
