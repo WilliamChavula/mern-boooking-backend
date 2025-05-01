@@ -99,6 +99,9 @@ router.post(
 router.post("/logout", async (_req: Request, res: Response) => {
   res.cookie("auth_token", "", {
     expires: new Date(0),
+    sameSite: "none",
+    httpOnly: true,
+    secure: config.NODE_ENV === "production",
   });
 
   res.sendStatus(200);
