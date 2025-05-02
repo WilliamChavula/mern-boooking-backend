@@ -78,8 +78,8 @@ router.post(
 
       res.cookie("auth_token", token, {
         httpOnly: true,
-        secure: true, // config.NODE_ENV === "production",
-        sameSite: false, // config.NODE_ENV !== "production",
+        secure: true,
+        sameSite: "none",
         maxAge: 24 * 60 * 60 * 1000,
       });
 
@@ -109,7 +109,7 @@ router.post("/logout", async (_req: Request, res: Response) => {
   });
   res.cookie("auth_token", "", {
     expires: new Date(0),
-    sameSite: false, // config.NODE_ENV !== "production",
+    sameSite: "none", // config.NODE_ENV !== "production",
     httpOnly: true,
     secure: true, // config.NODE_ENV === "production",
   });
