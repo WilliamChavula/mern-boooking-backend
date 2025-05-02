@@ -71,10 +71,15 @@ router.post(
         email: user.email,
       });
 
-      res.cookie("auth_token", token, {
-        httpOnly: true,
+      console.log({
         secure: config.NODE_ENV === "production",
         sameSite: config.NODE_ENV !== "production",
+      });
+
+      res.cookie("auth_token", token, {
+        httpOnly: true,
+        secure: true, // config.NODE_ENV === "production",
+        sameSite: false, // config.NODE_ENV !== "production",
         maxAge: 24 * 60 * 60 * 1000,
       });
 
@@ -98,11 +103,15 @@ router.post(
 );
 
 router.post("/logout", async (_req: Request, res: Response) => {
+  console.log({
+    secure: config.NODE_ENV === "production",
+    sameSite: config.NODE_ENV !== "production",
+  });
   res.cookie("auth_token", "", {
     expires: new Date(0),
-    sameSite: config.NODE_ENV !== "production",
+    sameSite: false, // config.NODE_ENV !== "production",
     httpOnly: true,
-    secure: config.NODE_ENV === "production",
+    secure: true, // config.NODE_ENV === "production",
   });
 
   res.sendStatus(200);
