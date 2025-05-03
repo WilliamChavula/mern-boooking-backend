@@ -4,13 +4,20 @@ import { v2 as cloudinary } from "cloudinary";
 
 import type { Request, Response, Router } from "express";
 
-import { createHotel, getMyHotels } from "../services/my-hotels.service";
+import {
+  createHotel,
+  getMyHotel,
+  getMyHotels,
+} from "../services/my-hotels.service";
 import { verifyToken } from "../middleware/auth.middleware";
 
 import {
   CreateHotelPayload,
   createHotelSchema,
   CreateHotelSchemaResponse,
+  GetHotelResponse,
+  hotelParams,
+  HotelParams,
   HotelsResponse,
 } from "../schemas/hotel.schema";
 import { ZodError } from "zod";
@@ -94,6 +101,37 @@ router.get(
         success: false,
         message: "Error fetching Hotels",
         data: [],
+      });
+    }
+  },
+);
+
+router.get(
+  "/:hotelId",
+  verifyToken,
+  async (req: Request<HotelParams>, res: Response<GetHotelResponse>) => {
+    try {
+      const { hotelId } = await hotelParams.parseAsync(req.params);
+      const userId = req.user.userId;
+
+      const hotel = await getMyHotel(hotelId, userId);
+
+      if (!hotel) {
+        res.status(404).json({
+          success: false,
+          message: "No Hotel found with id: " + hotelId,
+        });
+        return;
+      }
+      res.status(200).json({
+        success: true,
+        message: "Fetch hotel Successful",
+        data: hotel,
+      });
+    } catch (e) {
+      res.status(500).json({
+        success: false,
+        message: "Something went wrong",
       });
     }
   },

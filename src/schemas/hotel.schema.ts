@@ -57,26 +57,43 @@ const createHotelSchemaFailedResponse = z.object({
     .optional(),
 });
 
+export const hotelParams = z.object({
+  hotelId: z.string({ message: "Hotel Id is required" }),
+});
+
+export type HotelResponse = {
+  name: string;
+  city: string;
+  country: string;
+  description: string;
+  type: string;
+  adultCount: number;
+  childCount: number;
+  pricePerNight: number;
+  starRating: number;
+  userId: string;
+  imageUrls: string[];
+  facilities: string[];
+  _id: string;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+type HotelSuccessResponse = {
+  success: true;
+  message: string;
+  data: HotelResponse;
+};
+
+type HotelErrorResponse = {
+  success: false;
+  message: string;
+};
+
 type HotelsSuccessResponse = {
   success: true;
   message: string;
-  data: {
-    name: string;
-    city: string;
-    country: string;
-    description: string;
-    type: string;
-    adultCount: number;
-    childCount: number;
-    pricePerNight: number;
-    starRating: number;
-    userId: string;
-    imageUrls: string[];
-    facilities: string[];
-    _id: string;
-    createdAt: Date;
-    updatedAt: Date;
-  }[];
+  data: HotelResponse[];
 };
 
 type HotelsErrorResponse = {
@@ -91,3 +108,5 @@ export type CreateHotelPayload = z.infer<typeof createHotelSchema>;
 export type CreateHotelSchemaResponse =
   | z.infer<typeof createHotelSchemaSuccessResponse>
   | z.infer<typeof createHotelSchemaFailedResponse>;
+export type HotelParams = z.infer<typeof hotelParams>;
+export type GetHotelResponse = HotelSuccessResponse | HotelErrorResponse;
