@@ -57,6 +57,36 @@ const createHotelSchemaFailedResponse = z.object({
     .optional(),
 });
 
+type HotelsSuccessResponse = {
+  success: true;
+  message: string;
+  data: {
+    name: string;
+    city: string;
+    country: string;
+    description: string;
+    type: string;
+    adultCount: number;
+    childCount: number;
+    pricePerNight: number;
+    starRating: number;
+    userId: string;
+    imageUrls: string[];
+    facilities: string[];
+    _id: string;
+    createdAt: Date;
+    updatedAt: Date;
+  }[];
+};
+
+type HotelsErrorResponse = {
+  success: false;
+  message: string;
+  data: [];
+};
+
+export type HotelsResponse = HotelsSuccessResponse | HotelsErrorResponse;
+
 export type CreateHotelPayload = z.infer<typeof createHotelSchema>;
 export type CreateHotelSchemaResponse =
   | z.infer<typeof createHotelSchemaSuccessResponse>
