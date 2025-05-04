@@ -10,6 +10,7 @@ import { config } from "./config";
 import usersRoute from "./routes/users.route";
 import authRoute from "./routes/auth.route";
 import myHotelRoute from "./routes/my-hotels.route";
+import hotelRoute from "./routes/hotels.route";
 
 // Initialize express app
 const app: Express = express();
@@ -34,6 +35,7 @@ app.get("/api/health", (_req: Request, res: Response) => {
 app.use("/api/users", usersRoute);
 app.use("/api/auth", authRoute);
 app.use("/api/my/hotel", myHotelRoute);
+app.use("/api/hotels", hotelRoute);
 
 // Error handling middleware
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
