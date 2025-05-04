@@ -8,6 +8,7 @@ import {
   createHotel,
   getMyHotel,
   getMyHotels,
+  updateHotel,
 } from "../services/my-hotels.service";
 import { verifyToken } from "../middleware/auth.middleware";
 
@@ -44,16 +45,7 @@ router.post(
       const imageFiles = req.files as Express.Multer.File[];
       const newHotel = await createHotelSchema.parseAsync(req.body);
 
-      // upload images to cloudinary
-      const promises = imageFiles.map(async (image) => {
-        const b64 = Buffer.from(image.buffer).toString("base64");
-        const dataURI = `data:${image.mimetype};base64,${b64}`;
-        const res = await cloudinary.uploader.upload(dataURI);
-
-        return res.secure_url;
-      });
-
-      newHotel.imageUrls = await Promise.all(promises);
+      newHotel.imageUrls = await uploadImages(imageFiles);
       newHotel.userId = req.user.userId;
 
       const hotel = await createHotel(newHotel);
@@ -136,5 +128,74 @@ router.get(
     }
   },
 );
+
+router.put(
+  "/:hotelId",
+  verifyToken,
+  multerUpload.array("imageFiles"),
+  async (
+    req: Request<HotelParams, {}, CreateHotelPayload>,
+    res: Response<CreateHotelSchemaResponse>,
+  ) => {
+    try {
+      const { hotelId } = await hotelParams.parseAsync(req.params);
+      const userId = req.user.userId;
+
+      const validHotel = await createHotelSchema.parseAsync(req.body);
+      const updatedHotel = await updateHotel(hotelId, userId, validHotel);
+
+      const imageFiles = req.files as Express.Multer.File[];
+      const updatedUrls = await uploadImages(imageFiles);
+
+      if (!updatedHotel) {
+        res.status(404).send({
+          success: false,
+          message: "Hotel not found",
+        });
+        return;
+      }
+
+      updatedHotel.imageUrls = [
+        ...updatedUrls,
+        ...(updatedHotel.imageUrls || []),
+      ];
+
+      await updatedHotel.save();
+
+      res.status(200).json({
+        success: true,
+        message: "Hotel updated successfully",
+        data: updatedHotel,
+      });
+    } catch (e) {
+      if (e instanceof ZodError) {
+        const issues = parseZodError(e);
+
+        res.status(400).json({
+          success: false,
+          message: "Failed to create a hotel.",
+          error: issues,
+        });
+      }
+      console.log("Error creating Hotels", e);
+      res.status(500).send({
+        success: false,
+        message: "Something went wrong",
+      });
+    }
+  },
+);
+
+async function uploadImages(imageFiles: Express.Multer.File[]) {
+  // upload images to cloudinary
+  const promises = imageFiles.map(async (image) => {
+    const b64 = Buffer.from(image.buffer).toString("base64");
+    const dataURI = `data:${image.mimetype};base64,${b64}`;
+    const res = await cloudinary.uploader.upload(dataURI);
+
+    return res.secure_url;
+  });
+  return await Promise.all(promises);
+}
 
 export default router;
