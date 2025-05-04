@@ -20,7 +20,7 @@ import {
   hotelParams,
   HotelParams,
   HotelsResponse,
-} from "../schemas/hotel.schema";
+} from "../schemas/my-hotel.schema";
 import { ZodError } from "zod";
 import { parseZodError } from "../utils/parse-zod-error";
 
