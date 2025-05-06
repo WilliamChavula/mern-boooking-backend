@@ -1,7 +1,12 @@
 import express from "express";
 import type { Request, Response, Router } from "express";
 
-import { getAllHotels, getHotelCount } from "../services/hotels.service";
+import {
+  constructSearchQuery,
+  constructSortOptions,
+  getAllHotels,
+  getHotelCount,
+} from "../services/hotels.service";
 import {
   hotelParamsSchema,
   HotelParamsSchema,
@@ -22,11 +27,14 @@ router.get(
       const pageSize = 5;
       const params = await hotelParamsSchema.parseAsync(req.query);
 
-      const pageNumber = params.pageNumber ? params.pageNumber : 1;
-      const skip = (pageNumber - 1) * pageSize;
+      const q = constructSearchQuery(params);
 
-      const hotels = await getAllHotels(skip, pageSize);
-      const totalHotelCount = await getHotelCount();
+      const pageNumber = params.page ? params.page : 1;
+      const skip = (pageNumber - 1) * pageSize;
+      const sortBy = constructSortOptions(params.sort);
+
+      const hotels = await getAllHotels(q, skip, pageSize, sortBy);
+      const totalHotelCount = await getHotelCount(q);
 
       const pagesCount = Math.ceil(totalHotelCount / pageSize);
 
@@ -34,6 +42,7 @@ router.get(
         success: true,
         message: "Search Hotels Success",
         pagination: {
+          total: totalHotelCount,
           pages: pagesCount,
           currentPage: pageNumber,
           nextPage: pageNumber + 1 <= pagesCount ? pageNumber + 1 : null,

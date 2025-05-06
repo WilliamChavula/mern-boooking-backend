@@ -1,7 +1,19 @@
 import { z } from "zod";
 
 export const hotelParamsSchema = z.object({
-  pageNumber: z.coerce.number().optional(),
+  page: z.coerce.number().optional(),
+  destination: z.string().optional(),
+  adultCount: z.coerce.number().optional(),
+  childCount: z.coerce.number().optional(),
+  maxPrice: z.coerce.number().optional(),
+
+  types: z.array(z.string()).or(z.string()).optional(),
+  facilities: z.array(z.string()).or(z.string()).optional(),
+  sort: z
+    .enum(["pricePerNightAsc", "pricePerNightDesc", "starRating"])
+    .default("starRating")
+    .optional(),
+  stars: z.array(z.coerce.number()).or(z.coerce.number()).optional(),
 });
 
 const hotelSchemaSuccessResponse = z.object({
@@ -9,6 +21,7 @@ const hotelSchemaSuccessResponse = z.object({
   message: z.string(),
   pagination: z.object({
     pages: z.number(),
+    total: z.number(),
     currentPage: z.number(),
     nextPage: z.number().nullable(),
   }),
