@@ -12,6 +12,7 @@ const configSchema = z.object({
   }),
   CLOUDINARY_NAME: z.string({ message: "CLOUDINARY_NAME is Required" }),
   CLOUDINARY_API_KEY: z.string({ message: "CLOUDINARY_API_KEY is Required" }),
+  STRIPE_SECRET_KEY: z.string({ message: "STRIPE_SECRET_KEY is Required" }),
 });
 
 export const config = configSchema.parse(process.env);

@@ -82,6 +82,24 @@ const hotelSchemaErrorResponse = z.object({
     .optional(),
 });
 
+export const paymentIntentSchema = z.object({
+  numberOfNights: z
+    .number({ message: "Length of Stay is required" })
+    .min(1, "Length of Stay cannot be less than 1"),
+});
+
+export type PayMentIntentResponseSchema =
+  | {
+      success: true;
+      message: string;
+      data: {
+        paymentIntentId: string;
+        clientSecret: string;
+        totalStayCost: number;
+      };
+    }
+  | z.infer<typeof hotelSchemaErrorResponse>;
+
 export type HotelParamsSchema = z.infer<typeof hotelParamsSchema>;
 export type HotelSchemaPaginatedResponse =
   | z.infer<typeof hotelSchemaSuccessPaginationResponse>
@@ -89,3 +107,4 @@ export type HotelSchemaPaginatedResponse =
 export type HotelSchemaResponse =
   | z.infer<typeof hotelSchemaSuccessResponse>
   | z.infer<typeof hotelSchemaErrorResponse>;
+export type PayMentIntentSchema = z.infer<typeof paymentIntentSchema>;
