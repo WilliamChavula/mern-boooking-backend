@@ -9,6 +9,7 @@ import {
   type CreateUserResponseSchema,
   type CreateUserSchema,
   type TokenResponseSchema,
+  UserResponseSchema,
 } from "../schemas/users.schema";
 import { parseZodError } from "../utils/parse-zod-error";
 import { verifyToken } from "../middleware/auth.middleware";
@@ -96,6 +97,39 @@ router.get(
     });
 
     return;
+  },
+);
+
+router.get(
+  "/me",
+  verifyToken,
+  async (req: Request, res: Response<UserResponseSchema>) => {
+    const userId = req.user.userId;
+
+    const user = await usersService.findById(userId);
+
+    if (!user) {
+      res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "User found successfully",
+      data: { ...user, _id: user._id.toString() },
+    });
+
+    try {
+    } catch (e) {
+      console.log("Error creating Hotels", e);
+      res.status(500).json({
+        success: false,
+        message: "Something went wrong",
+      });
+    }
   },
 );
 
