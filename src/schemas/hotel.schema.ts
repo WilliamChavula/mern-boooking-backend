@@ -88,7 +88,7 @@ export const paymentIntentSchema = z.object({
     .min(1, "Length of Stay cannot be less than 1"),
 });
 
-export type PayMentIntentResponseSchema =
+export type PaymentIntentResponseSchema =
   | {
       success: true;
       message: string;

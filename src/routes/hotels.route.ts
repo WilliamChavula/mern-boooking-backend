@@ -16,7 +16,7 @@ import {
   HotelParamsSchema,
   HotelSchemaPaginatedResponse,
   HotelSchemaResponse,
-  PayMentIntentResponseSchema,
+  PaymentIntentResponseSchema,
   paymentIntentSchema,
   PayMentIntentSchema,
 } from "../schemas/hotel.schema";
@@ -126,7 +126,7 @@ router.post(
   verifyToken,
   async (
     req: Request<HotelParams, {}, PayMentIntentSchema>,
-    res: Response<PayMentIntentResponseSchema>,
+    res: Response<PaymentIntentResponseSchema>,
   ) => {
     try {
       const { userId } = req.user;
