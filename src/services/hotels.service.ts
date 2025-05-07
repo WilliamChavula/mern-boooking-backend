@@ -13,6 +13,10 @@ export const getAllHotels = async (
   return Hotel.find(q).sort(sortBy).skip(skip).limit(limit);
 };
 
+export const getHotelById = async (hotelId: string) => {
+  return Hotel.findById(hotelId);
+};
+
 export const getHotelCount = async (q: FilterQuery<HotelType>) =>
   Hotel.countDocuments(q);
 

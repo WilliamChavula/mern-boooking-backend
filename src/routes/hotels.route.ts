@@ -5,15 +5,18 @@ import {
   constructSearchQuery,
   constructSortOptions,
   getAllHotels,
+  getHotelById,
   getHotelCount,
 } from "../services/hotels.service";
 import {
   hotelParamsSchema,
   HotelParamsSchema,
+  HotelSchemaPaginatedResponse,
   HotelSchemaResponse,
 } from "../schemas/hotel.schema";
 import { ZodError } from "zod";
 import { parseZodError } from "../utils/parse-zod-error";
+import { hotelParams, HotelParams } from "../schemas/my-hotel.schema";
 
 const router: Router = express.Router();
 
@@ -21,7 +24,7 @@ router.get(
   "/search",
   async (
     req: Request<{}, {}, {}, HotelParamsSchema>,
-    res: Response<HotelSchemaResponse>,
+    res: Response<HotelSchemaPaginatedResponse>,
   ) => {
     try {
       const pageSize = 5;
@@ -65,6 +68,45 @@ router.get(
       res
         .status(500)
         .json({ success: false, message: "Something went wrong." });
+    }
+  },
+);
+
+router.get(
+  "/:hotelId",
+  async (req: Request<HotelParams>, res: Response<HotelSchemaResponse>) => {
+    try {
+      const { hotelId } = await hotelParams.parseAsync(req.params);
+      const hotel = await getHotelById(hotelId);
+
+      if (!hotel) {
+        res.status(404).send({
+          success: false,
+          message: "No hotel found",
+        });
+        return;
+      }
+
+      res.status(200).json({
+        success: true,
+        message: "Hotel fetched successfully",
+        data: hotel,
+      });
+    } catch (e) {
+      if (e instanceof ZodError) {
+        const issues = parseZodError(e);
+
+        res.status(400).json({
+          success: false,
+          message: "Failed to create a hotel.",
+          error: issues,
+        });
+      }
+      console.log("Error creating Hotels", e);
+      res.status(500).send({
+        success: false,
+        message: "Something went wrong",
+      });
     }
   },
 );
