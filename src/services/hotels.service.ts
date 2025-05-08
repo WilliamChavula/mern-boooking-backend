@@ -95,3 +95,22 @@ export const findHotelByIdAndUpdateBooking = async (
     $push: { bookings: booking },
   }).lean();
 };
+
+export const findBookingsByUserId = async (
+  userId: string,
+): Promise<HotelType[]> => {
+  const bookings = await Hotel.find({
+    bookings: { $elemMatch: { userId } },
+  });
+
+  return bookings.map((booking) => {
+    const userBooking = booking.bookings.filter(
+      (userBooking) => userBooking.userId === userId,
+    );
+
+    return {
+      ...booking.toObject(),
+      bookings: userBooking,
+    };
+  });
+};

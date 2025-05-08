@@ -134,7 +134,16 @@ export type CreateBookingResponseSchema =
     }
   | z.infer<typeof hotelSchemaErrorResponse>;
 
+export type UserBookingResponse =
+  | {
+      success: true;
+      message: string;
+      data: HotelSchema[];
+    }
+  | z.infer<typeof hotelSchemaErrorResponse>;
+
 export type HotelParamsSchema = z.infer<typeof hotelParamsSchema>;
+export type HotelSchema = z.infer<typeof hotelSchema>;
 export type HotelSchemaPaginatedResponse =
   | z.infer<typeof hotelSchemaSuccessPaginationResponse>
   | z.infer<typeof hotelSchemaErrorResponse>;
