@@ -1,5 +1,8 @@
 import Hotel, { HotelType } from "../models/hotel.model";
-import { HotelParamsSchema } from "../schemas/hotel.schema";
+import {
+  CreateBookingSchema,
+  HotelParamsSchema,
+} from "../schemas/hotel.schema";
 import { FilterQuery, SortOrder } from "mongoose";
 
 export const getAllHotels = async (
@@ -82,4 +85,13 @@ export const constructSortOptions = (
   }
 
   return options;
+};
+
+export const findHotelByIdAndUpdateBooking = async (
+  hotelId: string,
+  booking: CreateBookingSchema,
+) => {
+  return Hotel.findByIdAndUpdate(hotelId, {
+    $push: { bookings: booking },
+  }).lean();
 };

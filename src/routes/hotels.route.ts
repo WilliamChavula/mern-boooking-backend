@@ -6,6 +6,7 @@ import Stripe from "stripe";
 import {
   constructSearchQuery,
   constructSortOptions,
+  findHotelByIdAndUpdateBooking,
   getAllHotels,
   getHotelById,
   getHotelCount,
@@ -16,9 +17,12 @@ import {
   HotelParamsSchema,
   HotelSchemaPaginatedResponse,
   HotelSchemaResponse,
+  createBookingSchema,
+  CreateBookingSchema,
   PaymentIntentResponseSchema,
   paymentIntentSchema,
-  PayMentIntentSchema,
+  PaymentIntentSchema,
+  CreateBookingResponseSchema,
 } from "../schemas/hotel.schema";
 import { hotelParams, HotelParams } from "../schemas/my-hotel.schema";
 
@@ -125,13 +129,14 @@ router.post(
   "/:hotelId/bookings/payment-intent",
   verifyToken,
   async (
-    req: Request<HotelParams, {}, PayMentIntentSchema>,
+    req: Request<HotelParams, {}, PaymentIntentSchema>,
     res: Response<PaymentIntentResponseSchema>,
   ) => {
     try {
       const { userId } = req.user;
       const { hotelId } = await hotelParams.parseAsync(req.params);
       const { numberOfNights } = await paymentIntentSchema.parseAsync(req.body);
+
       const hotel = await getHotelById(hotelId);
 
       if (!hotel) {
@@ -144,7 +149,7 @@ router.post(
       const totalStayCost = hotel.pricePerNight * numberOfNights;
 
       const paymentIntent = await stripe.paymentIntents.create({
-        amount: totalStayCost,
+        amount: totalStayCost * 100,
         currency: "usd",
         metadata: {
           hotelId,
@@ -170,6 +175,86 @@ router.post(
         success: true,
         message: "Payment intent created successfully",
         data: response,
+      });
+    } catch (e) {
+      console.log("Unknown error occurred. ", e);
+
+      if (e instanceof ZodError) {
+        const issues = parseZodError(e);
+
+        res.status(400).send({
+          success: false,
+          message: "Failed to create user",
+          error: issues,
+        });
+        return;
+      }
+      res
+        .status(500)
+        .json({ success: false, message: "Something went wrong." });
+    }
+  },
+);
+
+router.post(
+  "/:hotelId/bookings",
+  verifyToken,
+  async (
+    req: Request<HotelParams, {}, CreateBookingSchema>,
+    res: Response<CreateBookingResponseSchema>,
+  ) => {
+    try {
+      const { userId } = req.user;
+      const { hotelId } = await hotelParams.parseAsync(req.params);
+      const data = await createBookingSchema.parseAsync(req.body);
+
+      const paymentIntent = await stripe.paymentIntents.retrieve(
+        data.paymentIntentId,
+      );
+
+      if (!paymentIntent) {
+        res.status(400).json({
+          success: false,
+          message: "Payment intent not found",
+        });
+        return;
+      }
+
+      if (
+        paymentIntent.metadata.hotelId !== hotelId ||
+        paymentIntent.metadata.userId !== userId
+      ) {
+        res.status(400).json({
+          success: false,
+          message: "Payment intent mismatched",
+        });
+        return;
+      }
+
+      if (paymentIntent.status !== "succeeded") {
+        res.status(400).json({
+          success: false,
+          message: `Processing payment failed. Status: ${paymentIntent.status}`,
+        });
+        return;
+      }
+
+      const hotel = await findHotelByIdAndUpdateBooking(hotelId, {
+        ...data,
+        userId,
+      });
+
+      if (!hotel) {
+        res.status(404).json({
+          success: false,
+          message: "hotel not found",
+        });
+        return;
+      }
+
+      res.status(200).json({
+        success: true,
+        message: "Booking created successfully",
       });
     } catch (e) {
       console.log("Unknown error occurred. ", e);

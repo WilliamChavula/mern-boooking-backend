@@ -16,6 +16,19 @@ export const hotelParamsSchema = z.object({
   stars: z.array(z.coerce.number()).or(z.coerce.number()).optional(),
 });
 
+export const bookingTypeSchema = z.object({
+  _id: z.string(),
+  userId: z.string(),
+  firstName: z.string(),
+  lastName: z.string(),
+  email: z.string().email(),
+  adultCount: z.number(),
+  childCount: z.number(),
+  totalStayCost: z.number(),
+  checkIn: z.date(),
+  checkOut: z.date(),
+});
+
 const hotelSchema = z.object({
   _id: z.string(),
   name: z
@@ -48,6 +61,7 @@ const hotelSchema = z.object({
   userId: z.string().optional(),
   imageUrls: z.string().array().optional(),
   facilities: z.string().array().optional(),
+  bookings: bookingTypeSchema.array(),
   createdAt: z.date(),
   updatedAt: z.date(),
 });
@@ -83,9 +97,22 @@ const hotelSchemaErrorResponse = z.object({
 });
 
 export const paymentIntentSchema = z.object({
-  numberOfNights: z
+  numberOfNights: z.coerce
     .number({ message: "Length of Stay is required" })
     .min(1, "Length of Stay cannot be less than 1"),
+});
+
+export const createBookingSchema = z.object({
+  paymentIntentId: z.string(),
+  userId: z.string().optional(),
+  firstName: z.string(),
+  lastName: z.string(),
+  email: z.string().email(),
+  adultCount: z.number(),
+  childCount: z.number(),
+  totalStayCost: z.number(),
+  checkIn: z.string().datetime(),
+  checkOut: z.string().datetime(),
 });
 
 export type PaymentIntentResponseSchema =
@@ -100,6 +127,13 @@ export type PaymentIntentResponseSchema =
     }
   | z.infer<typeof hotelSchemaErrorResponse>;
 
+export type CreateBookingResponseSchema =
+  | {
+      success: true;
+      message: string;
+    }
+  | z.infer<typeof hotelSchemaErrorResponse>;
+
 export type HotelParamsSchema = z.infer<typeof hotelParamsSchema>;
 export type HotelSchemaPaginatedResponse =
   | z.infer<typeof hotelSchemaSuccessPaginationResponse>
@@ -107,4 +141,6 @@ export type HotelSchemaPaginatedResponse =
 export type HotelSchemaResponse =
   | z.infer<typeof hotelSchemaSuccessResponse>
   | z.infer<typeof hotelSchemaErrorResponse>;
-export type PayMentIntentSchema = z.infer<typeof paymentIntentSchema>;
+export type PaymentIntentSchema = z.infer<typeof paymentIntentSchema>;
+export type BookingTypeSchema = z.infer<typeof bookingTypeSchema>;
+export type CreateBookingSchema = z.infer<typeof createBookingSchema>;

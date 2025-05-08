@@ -1,9 +1,9 @@
 import bcrypt from "bcryptjs";
 
-import { model, Schema, Types } from "mongoose";
+import { model, Schema } from "mongoose";
 
 export type UserType = {
-  _id: Types.ObjectId;
+  _id: string;
   email: string;
   password: string;
   firstName: string;

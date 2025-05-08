@@ -1,4 +1,5 @@
 import { model, Schema } from "mongoose";
+import { BookingTypeSchema } from "../schemas/hotel.schema";
 
 export type HotelType = {
   _id: string;
@@ -14,9 +15,22 @@ export type HotelType = {
   starRating: number;
   imageUrls: string[];
   facilities: string[];
+  bookings: BookingTypeSchema[];
   createdAt: Date;
   updatedAt: Date;
 };
+
+const BookingSchema = new Schema<BookingTypeSchema>({
+  userId: { type: String, ref: "User" },
+  firstName: { type: String, required: true },
+  lastName: { type: String, required: true },
+  email: { type: String, required: true },
+  adultCount: { type: Number, required: true, min: 1 },
+  childCount: { type: Number, required: true, min: 0 },
+  totalStayCost: { type: Number, required: true },
+  checkIn: { type: Date, required: true },
+  checkOut: { type: Date, required: true },
+});
 
 const HotelSchema = new Schema<HotelType>(
   {
@@ -32,6 +46,7 @@ const HotelSchema = new Schema<HotelType>(
     starRating: { type: Number, required: true, min: 1, max: 5 },
     imageUrls: [{ type: String, required: true }],
     facilities: [{ type: String, required: true }],
+    bookings: [BookingSchema],
   },
   { timestamps: true },
 );
