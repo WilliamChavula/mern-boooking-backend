@@ -5,6 +5,10 @@ import {
 } from "../schemas/hotel.schema";
 import { FilterQuery, SortOrder } from "mongoose";
 
+export const getLatestHotels = async (): Promise<HotelType[]> => {
+  return Hotel.find().sort({ updatedAt: -1 }).lean();
+};
+
 export const getAllHotels = async (
   q: Record<string, any>,
   skip: number,

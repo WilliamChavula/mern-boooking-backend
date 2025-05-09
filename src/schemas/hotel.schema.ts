@@ -153,3 +153,10 @@ export type HotelSchemaResponse =
 export type PaymentIntentSchema = z.infer<typeof paymentIntentSchema>;
 export type BookingTypeSchema = z.infer<typeof bookingTypeSchema>;
 export type CreateBookingSchema = z.infer<typeof createBookingSchema>;
+export type GetAllHotelsResponseSchema =
+  | {
+      success: true;
+      message: string;
+      data: HotelSchema[];
+    }
+  | z.infer<typeof hotelSchemaErrorResponse>;

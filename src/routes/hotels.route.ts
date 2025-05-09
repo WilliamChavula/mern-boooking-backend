@@ -10,6 +10,7 @@ import {
   getAllHotels,
   getHotelById,
   getHotelCount,
+  getLatestHotels,
 } from "../services/hotels.service";
 
 import {
@@ -23,6 +24,7 @@ import {
   paymentIntentSchema,
   PaymentIntentSchema,
   CreateBookingResponseSchema,
+  GetAllHotelsResponseSchema,
 } from "../schemas/hotel.schema";
 import { hotelParams, HotelParams } from "../schemas/my-hotel.schema";
 
@@ -79,6 +81,34 @@ router.get(
         });
         return;
       }
+      res
+        .status(500)
+        .json({ success: false, message: "Something went wrong." });
+    }
+  },
+);
+
+router.get(
+  "/",
+  async (_req: Request, res: Response<GetAllHotelsResponseSchema>) => {
+    try {
+      const hotels = await getLatestHotels();
+
+      if (!hotels) {
+        res.status(404).send({
+          success: false,
+          message: "No hotels found",
+        });
+        return;
+      }
+
+      res.status(200).json({
+        success: true,
+        message: "Hotels fetched successfully",
+        data: hotels,
+      });
+    } catch (e) {
+      console.log("Unknown error occurred. ", e);
       res
         .status(500)
         .json({ success: false, message: "Something went wrong." });
