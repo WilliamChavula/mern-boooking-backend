@@ -75,10 +75,6 @@ router.post(
         httpOnly: true,
         secure: true,
         sameSite: config.NODE_ENV !== "production" ? "lax" : "none",
-        domain:
-          config.NODE_ENV === "production"
-            ? config.BACKEND_PROD_URL
-            : config.BACKEND_DEV_URL,
         maxAge: 24 * 60 * 60 * 1000,
       });
 
@@ -106,10 +102,6 @@ router.post("/logout", async (_req: Request, res: Response) => {
     expires: new Date(0),
     sameSite: config.NODE_ENV !== "production" ? "lax" : "none",
     httpOnly: true,
-    domain:
-      config.NODE_ENV === "production"
-        ? config.BACKEND_PROD_URL
-        : config.BACKEND_DEV_URL,
     secure: config.NODE_ENV === "production",
   });
 
