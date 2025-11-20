@@ -9,6 +9,17 @@ import { connect } from "mongoose";
 import { config } from "./config";
 import { logger } from "./utils/logger";
 import { requestLogger } from "./middleware/request-logger.middleware";
+import { getHelmetConfig } from "./middleware/helmet.middleware";
+import { getCorsOptions } from "./middleware/cors.middleware";
+import {
+  apiLimiter,
+  authLimiter,
+  registrationLimiter,
+} from "./middleware/rate-limit.middleware";
+import {
+  sanitizeMongoData,
+  sanitizeInput,
+} from "./middleware/sanitize.middleware";
 import usersRoute from "./routes/users.route";
 import authRoute from "./routes/auth.route";
 import myHotelRoute from "./routes/my-hotels.route";
@@ -20,23 +31,38 @@ import healthRoute from "./routes/health.route";
 const app: Express = express();
 const port = config.PORT;
 
-// Request logging middleware (should be first)
+// Trust proxy (required for rate limiting behind reverse proxy/load balancer)
+app.set("trust proxy", 1);
+
+// Security: Helmet - Secure HTTP headers
+app.use(getHelmetConfig());
+
+// Request logging middleware (should be early)
 app.use(requestLogger);
 
-// Middleware
-app.use(
-  cors({
-    origin: config.FRONTEND_URL,
-    credentials: true,
-  }),
-);
-app.use(cookieParser());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Security: CORS - Cross-Origin Resource Sharing
+app.use(cors(getCorsOptions()));
 
-// Health check routes
+// Body parsing middleware
+app.use(cookieParser());
+app.use(express.json({ limit: "10mb" })); // Limit payload size
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+
+// Security: Input sanitization
+app.use(sanitizeMongoData); // Prevent NoSQL injection
+app.use(sanitizeInput); // Additional input sanitization
+
+// Security: Global rate limiting (applies to all routes)
+app.use(apiLimiter);
+
+// Health check routes (exempt from rate limiting)
 app.use("/api", healthRoute);
 
+// Apply specific rate limiters to authentication routes
+app.use("/api/users/register", registrationLimiter);
+app.use("/api/auth/login", authLimiter);
+
+// Application routes
 app.use("/api/users", usersRoute);
 app.use("/api/auth", authRoute);
 app.use("/api/my/hotel", myHotelRoute);
