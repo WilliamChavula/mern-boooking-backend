@@ -34,6 +34,8 @@
     "mongodb": "^6.16.0",
     "mongoose": "^8.14.0",
     "multer": "1.4.5-lts.2",
+    "rate-limit-redis": "^4.3.0",
+    "redis": "^5.10.0",
     "stripe": "^18.1.0",
     "winston": "^3.18.3",
     "zod": "^3.24.3"
@@ -46,6 +48,7 @@
     "@types/jsonwebtoken": "^9.0.9",
     "@types/multer": "^1.4.12",
     "@types/node": "^22.15.3",
+    "@types/redis": "^4.0.11",
     "@types/supertest": "^6.0.3",
     "@vitest/coverage-v8": "^4.0.10",
     "@vitest/ui": "^4.0.10",
