@@ -55,10 +55,6 @@ jspm_packages/
 dist/
 
 # files
-IMPLEMENTATION.md
-LOGGING.md
-TESTING-IMPLEMENTATION.md
-TESTING.md
-PROJECT-SUMMARY.md
+*.md
+*.sh
 LOGGER-GUIDE.ts
-test-health.sh

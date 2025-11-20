@@ -8,6 +8,7 @@ import { v2 as cloudinary } from "cloudinary";
 import { connect } from "mongoose";
 import { config } from "./config";
 import { logger } from "./utils/logger";
+import { redisService } from "./services/redis.service";
 import { requestLogger } from "./middleware/request-logger.middleware";
 import { getHelmetConfig } from "./middleware/helmet.middleware";
 import { getCorsOptions } from "./middleware/cors.middleware";
@@ -95,6 +96,15 @@ const startServer = async () => {
       database: config.MONGODB_URI.split("@")[1]?.split("/")[0] || "unknown",
     });
 
+    // Connect to Redis (optional - server will continue if Redis fails)
+    try {
+      await redisService.connect();
+    } catch (error) {
+      logger.warn("Redis connection failed, continuing without Redis", {
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+
     cloudinary.config({
       cloud_name: config.CLOUDINARY_NAME,
       api_key: config.CLOUDINARY_API_KEY,
@@ -117,6 +127,7 @@ const startServer = async () => {
     // Graceful shutdown
     const gracefulShutdown = async (signal: string) => {
       logger.info(`${signal} received, shutting down gracefully`);
+      await redisService.disconnect();
       process.exit(0);
     };
 

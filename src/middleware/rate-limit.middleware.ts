@@ -1,6 +1,28 @@
 import rateLimit from 'express-rate-limit';
+import { RedisStore } from 'rate-limit-redis';
 import { Request, Response } from 'express';
 import { logger } from '../utils/logger';
+import { redisService } from '../services/redis.service';
+
+/**
+ * Get Redis store for rate limiting
+ * Falls back to memory store if Redis is not available
+ */
+const getStore = () => {
+    try {
+        if (redisService.isReady()) {
+            return new RedisStore({
+                sendCommand: (...args: string[]) => redisService.getClient().sendCommand(args),
+                prefix: 'rate-limit:',
+            });
+        }
+    } catch (error) {
+        logger.warn('Redis not available, using memory store for rate limiting', {
+            error: error instanceof Error ? error.message : 'Unknown error',
+        });
+    }
+    return undefined; // Use default memory store
+};
 
 /**
  * General API rate limiter
@@ -9,6 +31,7 @@ import { logger } from '../utils/logger';
 export const apiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 100, // Limit each IP to 100 requests per windowMs
+    store: getStore(),
     message: {
         status: 'error',
         message: 'Too many requests from this IP, please try again later.',
@@ -19,7 +42,7 @@ export const apiLimiter = rateLimit({
         logger.warn('Rate limit exceeded', {
             ip: req.ip,
             path: req.path,
-            correlationId: req.correlationId,
+            correlationId: (req as any).correlationId,
         });
         res.status(429).json({
             status: 'error',
@@ -37,6 +60,7 @@ export const apiLimiter = rateLimit({
 export const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 5, // Limit each IP to 5 login requests per windowMs
+    store: getStore(),
     skipSuccessfulRequests: false,
     message: {
         status: 'error',
@@ -47,7 +71,7 @@ export const authLimiter = rateLimit({
             ip: req.ip,
             path: req.path,
             email: req.body?.email,
-            correlationId: req.correlationId,
+            correlationId: (req as any).correlationId,
         });
         res.status(429).json({
             status: 'error',
@@ -66,6 +90,7 @@ export const authLimiter = rateLimit({
 export const registrationLimiter = rateLimit({
     windowMs: 60 * 60 * 1000, // 1 hour
     max: 3,
+    store: getStore(),
     skipSuccessfulRequests: true, // Don't count successful registrations
     message: {
         status: 'error',
@@ -75,7 +100,7 @@ export const registrationLimiter = rateLimit({
         logger.warn('Registration rate limit exceeded', {
             ip: req.ip,
             email: req.body?.email,
-            correlationId: req.correlationId,
+            correlationId: (req as any).correlationId,
         });
         res.status(429).json({
             status: 'error',
@@ -92,6 +117,7 @@ export const registrationLimiter = rateLimit({
 export const passwordResetLimiter = rateLimit({
     windowMs: 60 * 60 * 1000, // 1 hour
     max: 3,
+    store: getStore(),
     message: {
         status: 'error',
         message: 'Too many password reset attempts.',
@@ -100,7 +126,7 @@ export const passwordResetLimiter = rateLimit({
         logger.warn('Password reset rate limit exceeded', {
             ip: req.ip,
             email: req.body?.email,
-            correlationId: req.correlationId,
+            correlationId: (req as any).correlationId,
         });
         res.status(429).json({
             status: 'error',
@@ -119,6 +145,7 @@ export const passwordResetLimiter = rateLimit({
 export const bookingLimiter = rateLimit({
     windowMs: 60 * 60 * 1000, // 1 hour
     max: 10,
+    store: getStore(),
     message: {
         status: 'error',
         message: 'Too many booking attempts.',
@@ -126,8 +153,8 @@ export const bookingLimiter = rateLimit({
     handler: (req: Request, res: Response) => {
         logger.warn('Booking rate limit exceeded', {
             ip: req.ip,
-            userId: req.user.userId,
-            correlationId: req.correlationId,
+            userId: (req as any).user?.userId,
+            correlationId: (req as any).correlationId,
         });
         res.status(429).json({
             status: 'error',

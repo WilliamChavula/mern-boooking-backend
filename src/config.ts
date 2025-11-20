@@ -15,6 +15,7 @@ const configSchema = z.object({
     STRIPE_SECRET_KEY: z.string({ message: 'STRIPE_SECRET_KEY is Required' }),
     BACKEND_PROD_URL: z.string(),
     BACKEND_DEV_URL: z.string(),
+    REDIS_URL: z.string().optional().default('redis://localhost:6379'),
 });
 
 export const config = configSchema.parse(process.env);
