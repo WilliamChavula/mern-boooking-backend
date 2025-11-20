@@ -50,3 +50,12 @@ jspm_packages/
 
 # IDE
 .idea
+
+# dist folder
+dist/
+
+# files
+IMPLEMENTATION.md
+LOGGING.md
+LOGGER-GUIDE.ts
+test-health.sh
