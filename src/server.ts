@@ -7,15 +7,21 @@ import { v2 as cloudinary } from "cloudinary";
 
 import { connect } from "mongoose";
 import { config } from "./config";
+import { logger } from "./utils/logger";
+import { requestLogger } from "./middleware/request-logger.middleware";
 import usersRoute from "./routes/users.route";
 import authRoute from "./routes/auth.route";
 import myHotelRoute from "./routes/my-hotels.route";
 import hotelRoute from "./routes/hotels.route";
-import myBookings from "./routes/my-bookings";
+import myBookings from "./routes/my-bookings.routes";
+import healthRoute from "./routes/health.route";
 
 // Initialize express app
 const app: Express = express();
 const port = config.PORT;
+
+// Request logging middleware (should be first)
+app.use(requestLogger);
 
 // Middleware
 app.use(
@@ -28,10 +34,8 @@ app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Health check route
-app.get("/api/health", (_req: Request, res: Response) => {
-  res.status(200).json({ status: "ok", message: "Server is running" });
-});
+// Health check routes
+app.use("/api", healthRoute);
 
 app.use("/api/users", usersRoute);
 app.use("/api/auth", authRoute);
@@ -40,11 +44,19 @@ app.use("/api/hotels", hotelRoute);
 app.use("/api/my-bookings", myBookings);
 
 // Error handling middleware
-app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
-  console.error("Unhandled error:", err);
+app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
+  logger.error("Unhandled error", {
+    error: err.message,
+    stack: err.stack,
+    correlationId: (req as any).correlationId,
+    method: req.method,
+    url: req.url,
+  });
+
   res.status(500).json({
     status: "error",
     message: "An unexpected error occurred",
+    correlationId: (req as any).correlationId,
   });
 });
 
@@ -53,7 +65,9 @@ const startServer = async () => {
   try {
     // Connect to MongoDB if connection string is provided
     await connect(config.MONGODB_URI);
-    console.log("Connected to MongoDB");
+    logger.info("Connected to MongoDB", {
+      database: config.MONGODB_URI.split("@")[1]?.split("/")[0] || "unknown",
+    });
 
     cloudinary.config({
       cloud_name: config.CLOUDINARY_NAME,
@@ -61,15 +75,48 @@ const startServer = async () => {
       api_secret: config.CLOUDINARY_API_SECRET,
       secure: true,
     });
+    logger.info("Cloudinary configured");
 
     app.listen(port, (error) => {
       if (error) {
-        console.log(error);
+        logger.error("Failed to start server", { error: error.message });
+        throw error;
       }
-      console.log(`Server running on port ${port}`);
+      logger.info(`Server running on port ${port}`, {
+        environment: config.NODE_ENV,
+        port,
+      });
+    });
+
+    // Graceful shutdown
+    const gracefulShutdown = async (signal: string) => {
+      logger.info(`${signal} received, shutting down gracefully`);
+      process.exit(0);
+    };
+
+    process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+    process.on("SIGINT", () => gracefulShutdown("SIGINT"));
+
+    // Handle uncaught exceptions
+    process.on("uncaughtException", (error: Error) => {
+      logger.error("Uncaught Exception", {
+        error: error.message,
+        stack: error.stack,
+      });
+      process.exit(1);
+    });
+
+    // Handle unhandled promise rejections
+    process.on("unhandledRejection", (reason: any) => {
+      logger.error("Unhandled Rejection", {
+        reason: reason?.message || reason,
+      });
+      process.exit(1);
     });
   } catch (error) {
-    console.error("Failed to start server:", error);
+    logger.error("Failed to start server", {
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
     process.exit(1);
   }
 };
