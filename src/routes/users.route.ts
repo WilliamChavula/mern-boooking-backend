@@ -134,31 +134,27 @@ router.get(
     async (req: Request, res: Response<UserResponseSchema>) => {
         const userId = req.user.userId;
 
-        logger.info('Fetching user profile', { userId });
-        const user = await usersService.findById(userId);
-
-        if (!user) {
-            logger.error('User not found', { userId });
-            res.status(404).json({
-                success: false,
-                message: 'User not found',
-            });
-            return;
-        }
-
-        logger.info('User profile fetched successfully', { userId });
-        res.status(200).json({
-            success: true,
-            message: 'User found successfully',
-            data: { ...user, _id: user._id.toString() },
-        });
-
         try {
-        } catch (e) {
-            logger.error('Error fetching user profile', {
-                userId,
-                error: (e as Error).message,
+            logger.info('Fetching user profile', { userId });
+            const user = await usersService.findById(userId);
+
+            if (!user) {
+                logger.error('User not found', { userId });
+                res.status(404).json({
+                    success: false,
+                    message: 'User not found',
+                });
+                return;
+            }
+
+            logger.info('User profile fetched successfully', { userId });
+            res.status(200).json({
+                success: true,
+                message: 'User found successfully',
+                data: { ...user, _id: user._id.toString() },
             });
+        } catch (e) {
+            console.log('Error creating Hotels', e);
             res.status(500).json({
                 success: false,
                 message: 'Something went wrong',
