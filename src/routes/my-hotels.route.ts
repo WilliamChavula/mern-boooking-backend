@@ -46,7 +46,7 @@ router.post(
             const imageFiles = req.files as Express.Multer.File[];
             const newHotel = await createHotelSchema.parseAsync(req.body);
 
-            newHotel.imageUrls = await uploadImages(imageFiles);
+            newHotel.imageUrls = (await uploadImages(imageFiles))['urls'];
             newHotel.userId = req.user.userId;
 
             const hotel = await createHotel(newHotel);
@@ -162,7 +162,7 @@ router.put(
             const userId = req.user.userId;
 
             const validHotel = await createHotelSchema.parseAsync(req.body);
-            
+
             // Find the hotel document for update
             const hotelDoc = await findHotelForUpdate(hotelId, userId);
 
@@ -177,11 +177,11 @@ router.put(
 
             // Upload new images
             const imageFiles = req.files as Express.Multer.File[];
-            const updatedUrls = await uploadImages(imageFiles);
+            const updatedUrls = (await uploadImages(imageFiles))['urls'];
 
             // Update hotel fields
             Object.assign(hotelDoc, validHotel);
-            
+
             // Merge image URLs
             hotelDoc.imageUrls = [
                 ...updatedUrls,
