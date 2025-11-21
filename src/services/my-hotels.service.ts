@@ -207,6 +207,63 @@ export const updateHotel = async (
 };
 
 /**
+ * Finds a hotel document for update (returns Mongoose document, not lean)
+ * @param hotelId - MongoDB ObjectId of the hotel
+ * @param userId - Owner's user ID
+ * @returns Hotel document or null if not found
+ * @throws Error if database query fails or ID is invalid
+ */
+export const findHotelForUpdate = async (
+    hotelId: string,
+    userId: string
+) => {
+    try {
+        // Validate ObjectId format
+        if (!mongoose.Types.ObjectId.isValid(hotelId)) {
+            logger.error('Find hotel for update failed: Invalid ObjectId', {
+                hotelId,
+                userId,
+            });
+            throw new Error('Invalid hotel ID format');
+        }
+
+        logger.info('Finding hotel for update', { hotelId, userId });
+
+        const hotel = await Hotel.findOne({ _id: hotelId, userId }).exec();
+
+        if (!hotel) {
+            logger.info('Hotel not found or not owned by user', {
+                hotelId,
+                userId,
+            });
+            return null;
+        }
+
+        logger.info('Hotel found for update', {
+            hotelId,
+            userId,
+            hotelName: hotel.name,
+        });
+
+        return hotel;
+    } catch (error) {
+        if (error instanceof Error && error.message.includes('Invalid')) {
+            logger.error('Find hotel for update failed: Invalid hotel ID format', {
+                error,
+            });
+            throw error;
+        }
+
+        logger.error('Database error while finding hotel for update', {
+            hotelId,
+            userId,
+            error: error instanceof Error ? error.message : 'Unknown error',
+        });
+        throw new Error('Failed to find hotel for update');
+    }
+};
+
+/**
  * Deletes a hotel owned by a user
  * @param hotelId - MongoDB ObjectId of the hotel
  * @param userId - Owner's user ID

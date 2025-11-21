@@ -5,9 +5,9 @@ import type { Request, Response, Router } from 'express';
 
 import {
     createHotel,
+    findHotelForUpdate,
     getMyHotel,
     getMyHotels,
-    updateHotel,
 } from '../services/my-hotels.service';
 import { verifyToken } from '../middleware/auth.middleware';
 
@@ -162,12 +162,11 @@ router.put(
             const userId = req.user.userId;
 
             const validHotel = await createHotelSchema.parseAsync(req.body);
-            const updatedHotel = await updateHotel(hotelId, userId, validHotel);
+            
+            // Find the hotel document for update
+            const hotelDoc = await findHotelForUpdate(hotelId, userId);
 
-            const imageFiles = req.files as Express.Multer.File[];
-            const updatedUrls = await uploadImages(imageFiles);
-
-            if (!updatedHotel) {
+            if (!hotelDoc) {
                 logger.warn('Hotel to update not found', { hotelId, userId });
                 res.status(404).send({
                     success: false,
@@ -176,18 +175,27 @@ router.put(
                 return;
             }
 
-            updatedHotel.imageUrls = [
+            // Upload new images
+            const imageFiles = req.files as Express.Multer.File[];
+            const updatedUrls = await uploadImages(imageFiles);
+
+            // Update hotel fields
+            Object.assign(hotelDoc, validHotel);
+            
+            // Merge image URLs
+            hotelDoc.imageUrls = [
                 ...updatedUrls,
-                ...(updatedHotel.imageUrls || []),
+                ...(hotelDoc.imageUrls || []),
             ];
 
-            await updatedHotel.save();
+            // Save the updated document
+            await hotelDoc.save();
 
             logger.info('Hotel updated successfully', { hotelId, userId });
             res.status(200).json({
                 success: true,
                 message: 'Hotel updated successfully',
-                data: updatedHotel,
+                data: hotelDoc.toObject(),
             });
         } catch (e) {
             if (e instanceof ZodError) {
