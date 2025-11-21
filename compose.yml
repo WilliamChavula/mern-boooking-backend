@@ -1,7 +1,21 @@
 services:
-  redis:
+  redis-cache:
     image: redis:8.2-alpine
-    container_name: redis
+    container_name: redis-cache
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+  redis-queue:
+    image: redis:8.2-alpine
+    container_name: redis-queue
     restart: unless-stopped
     ports:
       - "6379:6379"
