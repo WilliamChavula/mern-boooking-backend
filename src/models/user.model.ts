@@ -14,10 +14,34 @@ export type UserType = {
 
 const userSchema = new Schema<UserType>(
   {
-    email: { type: String, unique: true, required: true },
-    password: { type: String, required: true },
-    firstName: { type: String, required: true },
-    lastName: { type: String, required: true },
+    email: {
+      type: String,
+      required: [true, 'Email is required'],
+      unique: true,
+      lowercase: true,
+      trim: true,
+      match: [/^\S+@\S+\.\S+$/, 'Please provide a valid email address'],
+      index: true,
+    },
+    password: {
+      type: String,
+      required: [true, 'Password is required'],
+      minlength: [6, 'Password must be at least 6 characters long'],
+    },
+    firstName: {
+      type: String,
+      required: [true, 'First name is required'],
+      trim: true,
+      minlength: [1, 'First name cannot be empty'],
+      maxlength: [50, 'First name cannot exceed 50 characters'],
+    },
+    lastName: {
+      type: String,
+      required: [true, 'Last name is required'],
+      trim: true,
+      minlength: [1, 'Last name cannot be empty'],
+      maxlength: [50, 'Last name cannot exceed 50 characters'],
+    },
   },
   { timestamps: true },
 );
