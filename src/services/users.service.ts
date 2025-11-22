@@ -1,7 +1,8 @@
 import mongoose from 'mongoose';
 import User from '../models/user.model';
-
 import type { UserType } from '../models/user.model';
+
+import authService from '../services/auth.service';
 import type { CreateUserSchema } from '../schemas/users.schema';
 import { logger } from '../utils/logger';
 
@@ -104,7 +105,7 @@ const findById = async (id: string): Promise<UserType | null> => {
  * @returns Created user object
  * @throws Error if user creation fails or data is invalid
  */
-const createUser = async (user: CreateUserSchema): Promise<UserType> => {
+const createUser = async (user: CreateUserSchema): Promise<string> => {
     try {
         const { email, firstName, lastName } = user;
 
@@ -140,7 +141,12 @@ const createUser = async (user: CreateUserSchema): Promise<UserType> => {
             userId: registeredUser._id,
         });
 
-        return registeredUser.toObject();
+        const token = await authService.createAuthenticationToken({
+            userId: registeredUser._id.toString(),
+            email,
+        });
+
+        return token;
     } catch (error) {
         // Handle duplicate key error (11000)
         if (error instanceof Error && 'code' in error && error.code === 11000) {

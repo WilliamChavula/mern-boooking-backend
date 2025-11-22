@@ -1,7 +1,6 @@
 import express, { type Request, type Response, type Router } from 'express';
 
 import usersService from '../services/users.service';
-import authService from '../services/auth.service';
 
 import { config } from '../config';
 import {
@@ -40,27 +39,10 @@ router.post(
                 });
                 return;
             }
-            const { email, firstName, lastName, password } = req.body;
-            const user = await usersService.findByEmail(email);
-            if (user) {
-                logger.warn('User registration attempt with existing email', {
-                    ip: req.ip,
-                });
-                res.status(409).json({
-                    success: false,
-                    message: 'User already exists',
-                });
-                return;
-            }
 
-            const newUser = await usersService.createUser({
-                email,
-                firstName,
-                lastName,
-                password,
-            });
+            const token = await usersService.createUser(req.body);
 
-            if (!newUser) {
+            if (!token) {
                 logger.error('User creation failed');
                 res.status(500).json({
                     success: false,
@@ -69,35 +51,35 @@ router.post(
                 return;
             }
 
-            const token = await authService.createAuthenticationToken({
-                userId: newUser._id.toString(),
-                email,
-            });
-
             res.cookie('auth_token', token, {
                 httpOnly: true,
                 secure: config.NODE_ENV === 'production',
                 maxAge: 24 * 60 * 60 * 1000,
             });
 
-            logger.info('User registered successfully', {
-                userId: newUser._id.toString(),
-                email: newUser.email,
-                ip: req.ip,
-            });
-
             res.status(201).json({
                 success: true,
                 message: 'User created successfully',
-                data: {
-                    id: newUser._id.toString(),
-                    email: newUser.email,
-                    firstName: newUser.firstName,
-                    lastName: newUser.lastName,
-                },
             });
             return;
         } catch (e) {
+            if (e instanceof Error && e.message.includes('Duplicate')) {
+                res.status(409).json({
+                    success: false,
+                    message: 'User with this email already exists',
+                });
+            }
+
+            if (
+                e instanceof Error &&
+                e.message.includes('User creation failed')
+            ) {
+                res.status(400).json({
+                    success: false,
+                    message: 'Invalid user data provided',
+                });
+            }
+
             logger.error('User registration error', {
                 error: (e as Error).message,
             });
