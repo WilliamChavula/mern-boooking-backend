@@ -22,6 +22,14 @@ const configSchema = z.object({
     REDIS_RATE_LIMITER_URL: z
         .string()
         .url('REDIS_CACHE_URL must be a valid URL'),
+    HOTEL_ADMIN_PASSWORD: z
+        .string()
+        .min(8, 'Password must be at least 8 characters long')
+        .max(64, 'Password cannot exceed 64 characters'),
+    SUPER_ADMIN_PASSWORD: z
+        .string()
+        .min(8, 'Password must be at least 8 characters long')
+        .max(64, 'Password cannot exceed 64 characters'),
 });
 
 export const config = configSchema.parse(process.env);

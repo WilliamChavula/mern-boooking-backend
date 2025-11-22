@@ -197,7 +197,7 @@ const seedAdminUser = async () => {
         // Create admin user
         const adminUser = await User.create({
             email: adminEmail,
-            password: 'Admin@123456', // Will be hashed by the pre-save hook
+            password: config.HOTEL_ADMIN_PASSWORD,
             firstName: 'System',
             lastName: 'Administrator',
             role: adminRole._id,
@@ -246,7 +246,7 @@ const seedSuperAdminUser = async () => {
         // Create super admin user
         const superAdminUser = await User.create({
             email: superAdminEmail,
-            password: 'SuperAdmin@123456', // Will be hashed by the pre-save hook
+            password: config.SUPER_ADMIN_PASSWORD,
             firstName: 'Super',
             lastName: 'Administrator',
             role: superAdminRole._id,
