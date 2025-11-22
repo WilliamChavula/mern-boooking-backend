@@ -15,8 +15,8 @@ const connection: ConnectionOptions = {
 };
 
 export interface ImageUploadJobData {
-    images: Array<{
-        buffer: string; // Base64 encoded
+    tempFiles: Array<{
+        tempPath: string; // Path to temporary file on disk
         originalname: string;
         mimetype: string;
         size: number;
@@ -123,7 +123,11 @@ class QueueService {
         });
 
         queueEvents.on('failed', ({ jobId, failedReason }) => {
-            logger.error('Job failed', { queueName, jobId, reason: failedReason });
+            logger.error('Job failed', {
+                queueName,
+                jobId,
+                reason: failedReason,
+            });
         });
 
         queueEvents.on('progress', ({ jobId, data }) => {
@@ -155,17 +159,13 @@ class QueueService {
             return;
         }
 
-        const worker = new Worker<T, R>(
-            queueName,
-            processor,
-            {
-                connection,
-                concurrency: options?.concurrency || 5,
-                limiter: options?.limiter,
-            }
-        );
+        const worker = new Worker<T, R>(queueName, processor, {
+            connection,
+            concurrency: options?.concurrency || 5,
+            limiter: options?.limiter,
+        });
 
-        worker.on('completed', (job) => {
+        worker.on('completed', job => {
             logger.info('Worker completed job', {
                 queueName,
                 jobId: job.id,
@@ -182,7 +182,7 @@ class QueueService {
             });
         });
 
-        worker.on('error', (err) => {
+        worker.on('error', err => {
             logger.error('Worker error', {
                 queueName,
                 error: err.message,
@@ -190,7 +190,10 @@ class QueueService {
         });
 
         this.workers.set(queueName, worker);
-        logger.info('Worker registered', { queueName, concurrency: options?.concurrency || 5 });
+        logger.info('Worker registered', {
+            queueName,
+            concurrency: options?.concurrency || 5,
+        });
     }
 
     /**
@@ -211,14 +214,10 @@ class QueueService {
             throw new Error(`Queue ${queueName} not found`);
         }
 
-        const job = await queue.add(
-            queueName,
-            data,
-            {
-                ...JOB_OPTIONS,
-                ...options,
-            }
-        );
+        const job = await queue.add(queueName, data, {
+            ...JOB_OPTIONS,
+            ...options,
+        });
 
         logger.info('Job added to queue', {
             queueName,
@@ -239,13 +238,15 @@ class QueueService {
             throw new Error(`Queue ${queueName} not found`);
         }
 
-        const [waiting, active, completed, failed, delayed] = await Promise.all([
-            queue.getWaitingCount(),
-            queue.getActiveCount(),
-            queue.getCompletedCount(),
-            queue.getFailedCount(),
-            queue.getDelayedCount(),
-        ]);
+        const [waiting, active, completed, failed, delayed] = await Promise.all(
+            [
+                queue.getWaitingCount(),
+                queue.getActiveCount(),
+                queue.getCompletedCount(),
+                queue.getFailedCount(),
+                queue.getDelayedCount(),
+            ]
+        );
 
         return {
             waiting,
@@ -302,7 +303,11 @@ class QueueService {
         }
 
         const cleaned = await queue.clean(grace, 1000, status);
-        logger.info('Queue cleaned', { queueName, status, count: cleaned.length });
+        logger.info('Queue cleaned', {
+            queueName,
+            status,
+            count: cleaned.length,
+        });
         return cleaned;
     }
 

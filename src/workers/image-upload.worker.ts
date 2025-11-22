@@ -1,6 +1,7 @@
 import { Job } from 'bullmq';
 import { v2 as cloudinary } from 'cloudinary';
-import { Readable } from 'stream';
+import { createReadStream } from 'fs';
+import fs from 'fs/promises';
 import { logger } from '../utils/logger';
 import {
     queueService,
@@ -30,10 +31,10 @@ interface UploadError {
 }
 
 /**
- * Upload a single image to Cloudinary
+ * Upload a single image to Cloudinary from temporary file
  */
 async function uploadSingleImage(
-    imageData: { buffer: string; originalname: string; size: number },
+    imageData: { tempPath: string; originalname: string; size: number },
     index: number
 ): Promise<UploadResult> {
     // Validate file size
@@ -91,16 +92,40 @@ async function uploadSingleImage(
             }
         );
 
-        // Convert base64 back to buffer and stream it
-        const buffer = Buffer.from(imageData.buffer, 'base64');
-        const readableStream = Readable.from(buffer);
-        readableStream.pipe(uploadStream);
+        // Stream file directly from disk - no base64 conversion!
+        const fileStream = createReadStream(imageData.tempPath);
+        fileStream.pipe(uploadStream);
 
-        readableStream.on('error', (error) => {
+        fileStream.on('error', error => {
             clearTimeout(timeoutId);
+            logger.error('File read stream error', {
+                tempPath: imageData.tempPath,
+                error: error.message,
+            });
             reject(error);
         });
     });
+}
+
+/**
+ * Clean up temporary files
+ */
+async function cleanupTempFiles(
+    tempFiles: Array<{ tempPath: string; originalname: string }>
+): Promise<void> {
+    const deletePromises = tempFiles.map(async file => {
+        try {
+            await fs.unlink(file.tempPath);
+            logger.debug('Deleted temp file', { tempPath: file.tempPath });
+        } catch (error) {
+            logger.warn('Failed to delete temp file', {
+                tempPath: file.tempPath,
+                error: error instanceof Error ? error.message : 'Unknown error',
+            });
+        }
+    });
+
+    await Promise.allSettled(deletePromises);
 }
 
 /**
@@ -109,13 +134,14 @@ async function uploadSingleImage(
 async function processImageUpload(
     job: Job<ImageUploadJobData>
 ): Promise<ImageUploadResult> {
-    const { images, hotelId, userId, mergeWithExisting, correlationId } = job.data;
+    const { tempFiles, hotelId, userId, mergeWithExisting, correlationId } =
+        job.data;
 
     logger.info('Processing image upload job', {
         jobId: job.id,
         hotelId,
         userId,
-        imageCount: images.length,
+        imageCount: tempFiles.length,
         correlationId,
     });
 
@@ -127,13 +153,16 @@ async function processImageUpload(
         // Upload images with controlled concurrency
         for (
             let i = 0;
-            i < images.length;
+            i < tempFiles.length;
             i += UPLOAD_CONFIG.MAX_CONCURRENT_UPLOADS
         ) {
-            const batch = images.slice(i, i + UPLOAD_CONFIG.MAX_CONCURRENT_UPLOADS);
+            const batch = tempFiles.slice(
+                i,
+                i + UPLOAD_CONFIG.MAX_CONCURRENT_UPLOADS
+            );
 
             // Update job progress
-            await job.updateProgress(Math.floor((i / images.length) * 100));
+            await job.updateProgress(Math.floor((i / tempFiles.length) * 100));
 
             const results = await Promise.allSettled(
                 batch.map((image, batchIndex) =>
@@ -157,11 +186,11 @@ async function processImageUpload(
 
         // Sort by original index
         successful.sort((a, b) => a.index - b.index);
-        const uploadedUrls = successful.map((r) => r.url);
+        const uploadedUrls = successful.map(r => r.url);
 
         // Update hotel with new image URLs
         const hotel = await Hotel.findOne({ _id: hotelId, userId }).exec();
-        
+
         if (!hotel) {
             throw new Error('Hotel not found or not owned by user');
         }
@@ -201,6 +230,13 @@ async function processImageUpload(
             correlationId,
         });
         throw error;
+    } finally {
+        // Always clean up temporary files, even on failure
+        await cleanupTempFiles(tempFiles);
+        logger.info('Cleaned up temporary files', {
+            jobId: job.id,
+            fileCount: tempFiles.length,
+        });
     }
 }
 

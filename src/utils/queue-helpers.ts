@@ -1,5 +1,40 @@
-import { queueService, QUEUE_NAMES, ImageUploadJobData } from '../services/queue.service';
+import {
+    queueService,
+    QUEUE_NAMES,
+    ImageUploadJobData,
+} from '../services/queue.service';
 import { logger } from '../utils/logger';
+import fs from 'fs/promises';
+import path from 'path';
+import { randomUUID } from 'crypto';
+
+// Temporary upload directory
+const TEMP_UPLOAD_DIR = path.join(process.cwd(), 'uploads', 'temp');
+
+// Track if temp directory has been created to avoid redundant checks
+let tempDirCreated = false;
+
+/**
+ * Ensure temp upload directory exists (only creates once)
+ */
+async function ensureTempDir(): Promise<void> {
+    if (tempDirCreated) {
+        return;
+    }
+
+    try {
+        await fs.mkdir(TEMP_UPLOAD_DIR, { recursive: true });
+        tempDirCreated = true;
+        logger.debug('Temp upload directory created', {
+            path: TEMP_UPLOAD_DIR,
+        });
+    } catch (error) {
+        logger.error('Failed to create temp upload directory', {
+            error: error instanceof Error ? error.message : 'Unknown error',
+        });
+        throw error;
+    }
+}
 
 /**
  * Queue images for background upload
@@ -22,16 +57,33 @@ export async function queueImageUpload(
         throw new Error('No images provided');
     }
 
-    // Convert buffers to base64 for serialization
-    const images = imageFiles.map((file) => ({
-        buffer: file.buffer.toString('base64'),
-        originalname: file.originalname,
-        mimetype: file.mimetype,
-        size: file.size,
-    }));
+    await ensureTempDir();
+
+    // Save files temporarily to disk instead of base64 encoding
+    const tempFiles = await Promise.all(
+        imageFiles.map(async file => {
+            const uniqueFilename = `${randomUUID()}-${file.originalname}`;
+            const tempPath = path.join(TEMP_UPLOAD_DIR, uniqueFilename);
+
+            await fs.writeFile(tempPath, file.buffer);
+
+            logger.debug('Saved temp file', {
+                originalname: file.originalname,
+                tempPath,
+                size: file.size,
+            });
+
+            return {
+                tempPath,
+                originalname: file.originalname,
+                mimetype: file.mimetype,
+                size: file.size,
+            };
+        })
+    );
 
     const jobData: ImageUploadJobData = {
-        images,
+        tempFiles,
         hotelId,
         userId,
         mergeWithExisting,
@@ -46,7 +98,7 @@ export async function queueImageUpload(
         jobId: job.id,
         hotelId,
         userId,
-        imageCount: images.length,
+        imageCount: tempFiles.length,
         correlationId,
     });
 

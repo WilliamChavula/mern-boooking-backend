@@ -54,6 +54,9 @@ jspm_packages/
 # dist folder
 dist/
 
+# Temporary upload files
+uploads/temp/
+
 # files
 *.md
 *.sh
