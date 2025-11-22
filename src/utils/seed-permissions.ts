@@ -31,6 +31,15 @@ const seedPermissions = async () => {
                 name: PermissionName.HOTELS_BOOK,
                 description: 'Permission to book hotel rooms',
             },
+            {
+                name: PermissionName.PERMISSIONS_ASSIGN,
+                description: 'Permission to assign permissions to roles/users',
+            },
+            {
+                name: PermissionName.PERMISSIONS_REVOKE,
+                description:
+                    'Permission to revoke permissions from roles/users',
+            },
         ];
 
         for (const permData of permissionsData) {
@@ -73,13 +82,21 @@ const seedRoles = async () => {
         const deletePermission = await Permission.findOne({
             name: PermissionName.HOTELS_DELETE,
         });
+        const assignPermission = await Permission.findOne({
+            name: PermissionName.PERMISSIONS_ASSIGN,
+        });
+        const revokePermission = await Permission.findOne({
+            name: PermissionName.PERMISSIONS_REVOKE,
+        });
 
         if (
             !readPermission ||
             !bookPermission ||
             !createPermission ||
             !editPermission ||
-            !deletePermission
+            !deletePermission ||
+            !assignPermission ||
+            !revokePermission
         ) {
             throw new Error(
                 'Permissions not found. Please seed permissions first.'
@@ -124,6 +141,25 @@ const seedRoles = async () => {
                     createPermission._id,
                     editPermission._id,
                     deletePermission._id,
+                ],
+            },
+            { upsert: true, new: true }
+        );
+
+        // Super Admin role: can do everything plus manage permissions
+        await Role.findOneAndUpdate(
+            { name: RoleName.SUPER_ADMIN },
+            {
+                name: RoleName.SUPER_ADMIN,
+                description: 'Hotel administrator - full permissions',
+                permissions: [
+                    readPermission._id,
+                    bookPermission._id,
+                    createPermission._id,
+                    editPermission._id,
+                    deletePermission._id,
+                    assignPermission._id,
+                    revokePermission._id,
                 ],
             },
             { upsert: true, new: true }
@@ -182,6 +218,55 @@ const seedAdminUser = async () => {
     }
 };
 
+const seedSuperAdminUser = async () => {
+    try {
+        const superAdminEmail = 'super-admin@hotel-booking.com';
+        const superAdminRole = await Role.findOne({
+            name: RoleName.SUPER_ADMIN,
+        });
+
+        if (!superAdminRole) {
+            throw new Error(
+                'Super Admin role not found. Please seed roles first.'
+            );
+        }
+
+        // Check if super admin user already exists
+        const existingSuperAdmin = await User.findOne({
+            email: superAdminEmail,
+        });
+
+        if (existingSuperAdmin) {
+            logger.info('Super Admin user already exists', {
+                email: superAdminEmail,
+            });
+            return;
+        }
+
+        // Create super admin user
+        const superAdminUser = await User.create({
+            email: superAdminEmail,
+            password: 'SuperAdmin@123456', // Will be hashed by the pre-save hook
+            firstName: 'Super',
+            lastName: 'Administrator',
+            role: superAdminRole._id,
+        });
+
+        logger.info('Super Admin user created successfully', {
+            userId: superAdminUser._id,
+            email: superAdminEmail,
+        });
+        logger.warn(
+            'IMPORTANT: Change the default super admin password immediately!'
+        );
+    } catch (error) {
+        logger.error('Error seeding super admin user', {
+            error: error instanceof Error ? error.message : 'Unknown error',
+        });
+        throw error;
+    }
+};
+
 /**
  * Main seeding function
  */
@@ -199,6 +284,7 @@ export const seedDatabase = async () => {
         await seedPermissions();
         await seedRoles();
         await seedAdminUser();
+        await seedSuperAdminUser();
 
         logger.info('Database seeding completed successfully');
     } catch (error) {
@@ -229,4 +315,5 @@ export default {
     seedRoles,
     seedAdminUser,
     seedDatabase,
+    seedSuperAdminUser,
 };

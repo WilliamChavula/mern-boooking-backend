@@ -8,6 +8,7 @@ export enum RoleName {
     USER = 'user',
     HOTEL_STAFF = 'hotel_staff',
     HOTEL_ADMIN = 'hotel_admin',
+    SUPER_ADMIN = 'super_admin',
 }
 
 /**

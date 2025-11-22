@@ -82,6 +82,20 @@ export const CanEditHotel = requirePermission(PermissionName.HOTELS_EDIT);
 export const CanDeleteHotel = requirePermission(PermissionName.HOTELS_DELETE);
 
 /**
+ * Policy: Can Assign permissions
+ */
+export const CanAssignPermissions = requirePermission(
+    PermissionName.PERMISSIONS_ASSIGN
+);
+
+/**
+ * Policy: Can Revoke permissions
+ */
+export const CanRevokePermissions = requirePermission(
+    PermissionName.PERMISSIONS_REVOKE
+);
+
+/**
  * Middleware to check if user has ANY of the provided permissions
  * @param permissions - Array of permissions, user needs at least one
  * @returns Express middleware function
@@ -195,3 +209,8 @@ export const requireAllPermissions = (permissions: PermissionName[]) => {
         }
     };
 };
+
+export const CanManagePermissions = requireAllPermissions([
+    PermissionName.PERMISSIONS_ASSIGN,
+    PermissionName.PERMISSIONS_REVOKE,
+]);

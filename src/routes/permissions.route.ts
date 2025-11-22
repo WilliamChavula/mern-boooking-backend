@@ -9,6 +9,7 @@ import {
 } from '../schemas/permission.schema';
 import { parseZodError } from '../utils/parse-zod-error';
 import { logger } from '../utils/logger';
+import { CanManagePermissions } from '../middleware/permission.middleware';
 
 const router: Router = express.Router();
 
@@ -79,7 +80,7 @@ router.get(
 router.put(
     '/assign-role',
     verifyToken,
-    // TODO: Add admin-only middleware when implemented
+    CanManagePermissions,
     async (
         req: Request<{}, {}, UpdateUserRoleSchema>,
         res: Response<PermissionResponseSchema>

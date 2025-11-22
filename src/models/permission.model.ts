@@ -9,6 +9,8 @@ export enum PermissionName {
     HOTELS_EDIT = 'hotels:edit',
     HOTELS_DELETE = 'hotels:delete',
     HOTELS_BOOK = 'hotels:book',
+    PERMISSIONS_ASSIGN = 'permissions:assign',
+    PERMISSIONS_REVOKE = 'permissions:revoke',
 }
 
 /**
