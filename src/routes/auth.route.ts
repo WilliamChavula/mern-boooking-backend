@@ -3,6 +3,7 @@ import express, { type Router, type Request, type Response } from 'express';
 import { type LoginResponse, type LoginSchema } from '../schemas/auth.schema';
 import usersService from '../services/users.service';
 import authService from '../services/auth.service';
+import permissionService from '../services/permission.service';
 import { config } from '../config';
 import { loginPayloadValidatorMiddleware } from '../middleware/auth.middleware';
 import { logger } from '../utils/logger';
@@ -55,9 +56,15 @@ router.post(
                 email: user.email,
             });
 
+            // Fetch user permissions for JWT token
+            const permissions = await permissionService.getUserPermissions(
+                user._id.toString()
+            );
+
             const token = await authService.createAuthenticationToken({
                 userId: user._id.toString(),
                 email: user.email,
+                permissions,
             });
 
             res.cookie('auth_token', token, {

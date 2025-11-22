@@ -10,6 +10,10 @@ import {
     getMyHotels,
 } from '../services/my-hotels.service';
 import { verifyToken } from '../middleware/auth.middleware';
+import {
+    CanCreateHotel,
+    CanEditHotel,
+} from '../middleware/permission.middleware';
 
 import {
     CreateHotelPayload,
@@ -37,6 +41,7 @@ const multerUpload = multer({
 router.post(
     '/',
     verifyToken,
+    CanCreateHotel,
     multerUpload.array('imageFiles', 6),
     async (
         req: Request<{}, {}, CreateHotelPayload>,
@@ -46,7 +51,7 @@ router.post(
             const imageFiles = req.files as Express.Multer.File[];
             const newHotel = await createHotelSchema.parseAsync(req.body);
             const userId = req.user.userId;
-            const correlationId = (req as any).correlationId;
+            const correlationId = req.correlationId;
 
             // Create hotel with empty image URLs first
             newHotel.imageUrls = [];
@@ -71,7 +76,7 @@ router.post(
                 userId,
                 imageJobId: jobId,
             });
-            
+
             res.status(201).json({
                 success: true,
                 message: jobId
@@ -171,6 +176,7 @@ router.get(
 router.put(
     '/:hotelId',
     verifyToken,
+    CanEditHotel,
     multerUpload.array('imageFiles'),
     async (
         req: Request<HotelParams, {}, CreateHotelPayload>,
@@ -202,7 +208,7 @@ router.put(
             // Queue image upload in background if there are new images
             const imageFiles = req.files as Express.Multer.File[];
             let jobId: string | undefined;
-            
+
             if (imageFiles && imageFiles.length > 0) {
                 jobId = await queueImageUpload(
                     imageFiles,
@@ -213,10 +219,14 @@ router.put(
                 );
             }
 
-            logger.info('Hotel updated successfully', { hotelId, userId, imageJobId: jobId });
+            logger.info('Hotel updated successfully', {
+                hotelId,
+                userId,
+                imageJobId: jobId,
+            });
             res.status(200).json({
                 success: true,
-                message: jobId 
+                message: jobId
                     ? 'Hotel updated successfully. Images are being processed in the background.'
                     : 'Hotel updated successfully',
                 data: hotelDoc.toObject() as any,

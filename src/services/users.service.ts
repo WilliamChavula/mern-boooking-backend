@@ -1,8 +1,10 @@
 import mongoose from 'mongoose';
 import User from '../models/user.model';
 import type { UserType } from '../models/user.model';
+import { Role, RoleName } from '../models/role.model';
 
 import authService from '../services/auth.service';
+import permissionService from '../services/permission.service';
 import type { CreateUserSchema } from '../schemas/users.schema';
 import { logger } from '../utils/logger';
 
@@ -126,10 +128,20 @@ const createUser = async (user: CreateUserSchema): Promise<string> => {
             lastName,
         });
 
-        // Create user with normalized email
+        // Get default user role
+        const defaultRole = await Role.findOne({ name: RoleName.USER });
+        if (!defaultRole) {
+            logger.error(
+                'Default user role not found - database may need seeding'
+            );
+            throw new Error('Default user role not configured');
+        }
+
+        // Create user with normalized email and default role
         const registeredUser = await User.create({
             ...user,
             email,
+            role: defaultRole._id,
         });
 
         if (!registeredUser) {
@@ -141,9 +153,15 @@ const createUser = async (user: CreateUserSchema): Promise<string> => {
             userId: registeredUser._id,
         });
 
+        // Fetch user permissions for JWT token
+        const permissions = await permissionService.getUserPermissions(
+            registeredUser._id.toString()
+        );
+
         const token = await authService.createAuthenticationToken({
             userId: registeredUser._id.toString(),
             email,
+            permissions,
         });
 
         return token;

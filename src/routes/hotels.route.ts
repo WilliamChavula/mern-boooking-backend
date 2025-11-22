@@ -31,6 +31,10 @@ import { hotelParams, HotelParams } from '../schemas/my-hotel.schema';
 import { parseZodError } from '../utils/parse-zod-error';
 import { config } from '../config';
 import { verifyToken } from '../middleware/auth.middleware';
+import {
+    CanViewHotel,
+    CanBookHotel,
+} from '../middleware/permission.middleware';
 import { logger } from '../utils/logger';
 
 const stripe = new Stripe(config.STRIPE_SECRET_KEY);
@@ -39,6 +43,8 @@ const router: Router = express.Router();
 
 router.get(
     '/search',
+    verifyToken,
+    CanViewHotel,
     async (
         req: Request<{}, {}, {}, HotelParamsSchema>,
         res: Response<HotelSchemaPaginatedResponse>
@@ -101,6 +107,8 @@ router.get(
 
 router.get(
     '/',
+    verifyToken,
+    CanViewHotel,
     async (_req: Request, res: Response<GetAllHotelsResponseSchema>) => {
         try {
             const hotels = await getLatestHotels();
@@ -132,6 +140,8 @@ router.get(
 
 router.get(
     '/:hotelId',
+    verifyToken,
+    CanViewHotel,
     async (req: Request<HotelParams>, res: Response<HotelSchemaResponse>) => {
         try {
             const { hotelId } = await hotelParams.parseAsync(req.params);
@@ -176,6 +186,7 @@ router.get(
 router.post(
     '/:hotelId/bookings/payment-intent',
     verifyToken,
+    // CanBookHotel,
     async (
         req: Request<HotelParams, {}, PaymentIntentSchema>,
         res: Response<PaymentIntentResponseSchema>
@@ -261,6 +272,7 @@ router.post(
 router.post(
     '/:hotelId/bookings',
     verifyToken,
+    CanBookHotel,
     async (
         req: Request<HotelParams, {}, CreateBookingSchema>,
         res: Response<CreateBookingResponseSchema>

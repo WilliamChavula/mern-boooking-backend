@@ -2,6 +2,7 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { config } from '../config';
 import { logger } from '../utils/logger';
+import type { PermissionName } from '../models/permission.model';
 
 /**
  * User payload for JWT token
@@ -9,6 +10,7 @@ import { logger } from '../utils/logger';
 interface UserPayload {
     userId: string;
     email: string;
+    permissions?: PermissionName[];
 }
 
 /**
@@ -43,6 +45,7 @@ const createAuthenticationToken = async (
 
         logger.info('Authentication token created successfully', {
             userId: user.userId,
+            permissionsCount: user.permissions?.length || 0,
         });
 
         return token;
