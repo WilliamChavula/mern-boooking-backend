@@ -8,10 +8,13 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm ci --only=production && npm cache clean --force
+RUN npm install && npm cache clean --force
 
 # Copy source code
 COPY . .
+
+# Build application (if applicable)
+RUN npm run build
 
 # Production stage
 FROM node:22-alpine
@@ -25,6 +28,7 @@ WORKDIR /app
 
 # Copy dependencies and code from builder
 COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/dist ./
 
 
 # Expose port
@@ -38,4 +42,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
 ENTRYPOINT ["dumb-init", "--"]
 
 # Start application
-CMD ["node", "server.js"]
+CMD ["node", "index.js"]

@@ -20,10 +20,6 @@ import {
     authLimiter,
     registrationLimiter,
 } from './middleware/rate-limit.middleware';
-import {
-    sanitizeMongoData,
-    sanitizeInput,
-} from './middleware/sanitize.middleware';
 import usersRoute from './routes/users.route';
 import authRoute from './routes/auth.route';
 import myHotelRoute from './routes/my-hotels.route';
@@ -55,8 +51,8 @@ app.use(express.json({ limit: '10mb' })); // Limit payload size
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Security: Input sanitization
-app.use(sanitizeMongoData); // Prevent NoSQL injection
-app.use(sanitizeInput); // Additional input sanitization
+// app.use(sanitizeMongoData); // Prevent NoSQL injection
+// app.use(sanitizeInput); // Additional input sanitization
 
 // Security: Global rate limiting (applies to all routes)
 app.use(apiLimiter);

@@ -35,10 +35,10 @@ export const sanitizeInput = (
         req.body = sanitizeObject(req.body);
     }
 
-    // Sanitize query parameters
-    if (req.query) {
-        req.query = sanitizeObject(req.query);
-    }
+    // // Sanitize query parameters
+    // if (req.query) {
+    //     req.query = sanitizeObject(req.query);
+    // }
 
     // Sanitize URL parameters
     if (req.params) {
