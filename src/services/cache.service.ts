@@ -1,4 +1,4 @@
-import { redisService } from './redis.service';
+import { redisCacheService } from './redis-cache.service';
 import { logger } from '../utils/logger';
 
 export interface CacheOptions {
@@ -17,13 +17,13 @@ export class CacheService {
 
     static async get<T>(key: string, options?: CacheOptions): Promise<T | null> {
         try {
-            if (!redisService.isReady()) {
-                logger.warn('Redis not ready, cache GET skipped', { key });
+            if (!redisCacheService.isReady()) {
+                logger.warn('Redis Cache not ready, cache GET skipped', { key });
                 return null;
             }
 
             const cacheKey = this.buildKey(key, options?.prefix);
-            const cached = await redisService.getJSON<T>(cacheKey);
+            const cached = await redisCacheService.getJSON<T>(cacheKey);
 
             if (cached) {
                 logger.debug('Cache HIT', { key: cacheKey });
@@ -47,15 +47,15 @@ export class CacheService {
         options?: CacheOptions
     ): Promise<boolean> {
         try {
-            if (!redisService.isReady()) {
-                logger.warn('Redis not ready, cache SET skipped', { key });
+            if (!redisCacheService.isReady()) {
+                logger.warn('Redis Cache not ready, cache SET skipped', { key });
                 return false;
             }
 
             const cacheKey = this.buildKey(key, options?.prefix);
             const ttl = options?.ttl || this.DEFAULT_TTL;
 
-            const result = await redisService.setJSON(cacheKey, value, ttl);
+            const result = await redisCacheService.setJSON(cacheKey, value, ttl);
             
             if (result) {
                 logger.debug('Cache SET', { key: cacheKey, ttl });
@@ -73,13 +73,13 @@ export class CacheService {
 
     static async del(key: string, options?: CacheOptions): Promise<boolean> {
         try {
-            if (!redisService.isReady()) {
-                logger.warn('Redis not ready, cache DEL skipped', { key });
+            if (!redisCacheService.isReady()) {
+                logger.warn('Redis Cache not ready, cache DEL skipped', { key });
                 return false;
             }
 
             const cacheKey = this.buildKey(key, options?.prefix);
-            const result = await redisService.del(cacheKey);
+            const result = await redisCacheService.del(cacheKey);
 
             if (result > 0) {
                 logger.debug('Cache DEL', { key: cacheKey });
@@ -98,13 +98,13 @@ export class CacheService {
 
     static async invalidate(pattern: string, options?: CacheOptions): Promise<number> {
         try {
-            if (!redisService.isReady()) {
-                logger.warn('Redis not ready, cache invalidation skipped', { pattern });
+            if (!redisCacheService.isReady()) {
+                logger.warn('Redis Cache not ready, cache invalidation skipped', { pattern });
                 return 0;
             }
 
             const cachePattern = this.buildKey(pattern, options?.prefix);
-            const count = await redisService.invalidatePattern(cachePattern);
+            const count = await redisCacheService.invalidatePattern(cachePattern);
 
             logger.debug('Cache invalidated', { pattern: cachePattern, count });
             return count;

@@ -23,7 +23,7 @@ import {
 import { ZodError } from 'zod';
 import { parseZodError } from '../utils/parse-zod-error';
 import { logger } from '../utils/logger';
-import { uploadImages } from '../utils/image-uploader';
+import { queueImageUpload } from '../utils/queue-helpers';
 
 const router: Router = express.Router();
 
@@ -45,20 +45,39 @@ router.post(
         try {
             const imageFiles = req.files as Express.Multer.File[];
             const newHotel = await createHotelSchema.parseAsync(req.body);
+            const userId = req.user.userId;
+            const correlationId = (req as any).correlationId;
 
-            newHotel.imageUrls = (await uploadImages(imageFiles))['urls'];
-            newHotel.userId = req.user.userId;
+            // Create hotel with empty image URLs first
+            newHotel.imageUrls = [];
+            newHotel.userId = userId;
 
             const hotel = await createHotel(newHotel);
 
+            // Queue image upload in background
+            let jobId: string | undefined;
+            if (imageFiles && imageFiles.length > 0) {
+                jobId = await queueImageUpload(
+                    imageFiles,
+                    hotel._id,
+                    userId,
+                    false, // don't merge, replace
+                    correlationId
+                );
+            }
+
             logger.info('Hotel created successfully', {
                 hotelId: hotel._id,
-                userId: req.user.userId,
+                userId,
+                imageJobId: jobId,
             });
+            
             res.status(201).json({
                 success: true,
-                message: 'Hotel created successfully',
-                data: hotel,
+                message: jobId
+                    ? 'Hotel created successfully. Images are being processed in the background.'
+                    : 'Hotel created successfully',
+                data: hotel as any,
             });
 
             return;
@@ -160,6 +179,7 @@ router.put(
         try {
             const { hotelId } = await hotelParams.parseAsync(req.params);
             const userId = req.user.userId;
+            const correlationId = (req as any).correlationId;
 
             const validHotel = await createHotelSchema.parseAsync(req.body);
 
@@ -175,27 +195,31 @@ router.put(
                 return;
             }
 
-            // Upload new images
-            const imageFiles = req.files as Express.Multer.File[];
-            const updatedUrls = (await uploadImages(imageFiles))['urls'];
-
-            // Update hotel fields
+            // Update hotel fields first (excluding images)
             Object.assign(hotelDoc, validHotel);
-
-            // Merge image URLs
-            hotelDoc.imageUrls = [
-                ...updatedUrls,
-                ...(hotelDoc.imageUrls || []),
-            ];
-
-            // Save the updated document
             await hotelDoc.save();
 
-            logger.info('Hotel updated successfully', { hotelId, userId });
+            // Queue image upload in background if there are new images
+            const imageFiles = req.files as Express.Multer.File[];
+            let jobId: string | undefined;
+            
+            if (imageFiles && imageFiles.length > 0) {
+                jobId = await queueImageUpload(
+                    imageFiles,
+                    hotelId,
+                    userId,
+                    true, // merge with existing
+                    correlationId
+                );
+            }
+
+            logger.info('Hotel updated successfully', { hotelId, userId, imageJobId: jobId });
             res.status(200).json({
                 success: true,
-                message: 'Hotel updated successfully',
-                data: hotelDoc.toObject(),
+                message: jobId 
+                    ? 'Hotel updated successfully. Images are being processed in the background.'
+                    : 'Hotel updated successfully',
+                data: hotelDoc.toObject() as any,
             });
         } catch (e) {
             if (e instanceof ZodError) {

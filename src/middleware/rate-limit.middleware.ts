@@ -2,7 +2,7 @@ import rateLimit from 'express-rate-limit';
 import { RedisStore } from 'rate-limit-redis';
 import { Request, Response } from 'express';
 import { logger } from '../utils/logger';
-import { redisService } from '../services/redis.service';
+import { redisRateLimiterService } from '../services/redis-rate-limiter.service';
 
 /**
  * Get Redis store for rate limiting
@@ -10,14 +10,14 @@ import { redisService } from '../services/redis.service';
  */
 const getStore = () => {
     try {
-        if (redisService.isReady()) {
+        if (redisRateLimiterService.isReady()) {
             return new RedisStore({
-                sendCommand: (...args: string[]) => redisService.getClient().sendCommand(args),
+                sendCommand: (...args: string[]) => redisRateLimiterService.getClient().sendCommand(args),
                 prefix: 'rate-limit:',
             });
         }
     } catch (error) {
-        logger.warn('Redis not available, using memory store for rate limiting', {
+        logger.warn('Redis Rate Limiter not available, using memory store for rate limiting', {
             error: error instanceof Error ? error.message : 'Unknown error',
         });
     }

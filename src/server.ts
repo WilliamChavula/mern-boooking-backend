@@ -8,7 +8,10 @@ import { v2 as cloudinary } from "cloudinary";
 import { connect } from "mongoose";
 import { config } from "./config";
 import { logger } from "./utils/logger";
-import { redisService } from "./services/redis.service";
+import { redisCacheService } from "./services/redis-cache.service";
+import { redisRateLimiterService } from "./services/redis-rate-limiter.service";
+import { queueService } from "./services/queue.service";
+import { initializeImageUploadWorker } from "./workers/image-upload.worker";
 import { requestLogger } from "./middleware/request-logger.middleware";
 import { getHelmetConfig } from "./middleware/helmet.middleware";
 import { getCorsOptions } from "./middleware/cors.middleware";
@@ -96,11 +99,32 @@ const startServer = async () => {
       database: config.MONGODB_URI.split("@")[1]?.split("/")[0] || "unknown",
     });
 
-    // Connect to Redis (optional - server will continue if Redis fails)
+    // Connect to Redis instances (all optional - server will continue if they fail)
     try {
-      await redisService.connect();
+      await redisCacheService.connect();
+      logger.info("Redis Cache connected");
     } catch (error) {
-      logger.warn("Redis connection failed, continuing without Redis", {
+      logger.warn("Redis Cache connection failed, continuing without cache", {
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+
+    try {
+      await redisRateLimiterService.connect();
+      logger.info("Redis Rate Limiter connected");
+    } catch (error) {
+      logger.warn("Redis Rate Limiter connection failed, using memory store", {
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+
+    // Initialize queue service and workers
+    try {
+      await queueService.initialize();
+      initializeImageUploadWorker();
+      logger.info("Queue service and workers initialized");
+    } catch (error) {
+      logger.warn("Queue service initialization failed, image uploads will be synchronous", {
         error: error instanceof Error ? error.message : "Unknown error",
       });
     }
@@ -127,7 +151,22 @@ const startServer = async () => {
     // Graceful shutdown
     const gracefulShutdown = async (signal: string) => {
       logger.info(`${signal} received, shutting down gracefully`);
-      await redisService.disconnect();
+      
+      // Close queue service first (wait for jobs to complete)
+      try {
+        await queueService.shutdown();
+        logger.info("Queue service shut down");
+      } catch (error) {
+        logger.error("Error shutting down queue service", {
+          error: error instanceof Error ? error.message : "Unknown error",
+        });
+      }
+
+      // Close Redis connections
+      await redisCacheService.disconnect();
+      await redisRateLimiterService.disconnect();
+      
+      logger.info("Graceful shutdown complete");
       process.exit(0);
     };
 

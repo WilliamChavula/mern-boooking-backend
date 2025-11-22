@@ -2,61 +2,61 @@ import { createClient, RedisClientType } from 'redis';
 import { config } from '../config';
 import { logger } from '../utils/logger';
 
-class RedisService {
+class RedisCacheService {
     private client: RedisClientType | null = null;
     private isConnected: boolean = false;
 
     async connect(): Promise<void> {
         if (this.isConnected && this.client) {
-            logger.info('Redis already connected');
+            logger.info('Redis Cache already connected');
             return;
         }
 
         try {
             this.client = createClient({
-                url: config.REDIS_URL,
+                url: config.REDIS_CACHE_URL,
                 socket: {
                     connectTimeout: 10000,
                     reconnectStrategy: (retries) => {
                         if (retries > 10) {
-                            logger.error('Redis max reconnection attempts reached');
+                            logger.error('Redis Cache max reconnection attempts reached');
                             return new Error('Max reconnection attempts reached');
                         }
                         const delay = Math.min(retries * 100, 3000);
-                        logger.warn(`Redis reconnecting in ${delay}ms`, { attempt: retries });
+                        logger.warn(`Redis Cache reconnecting in ${delay}ms`, { attempt: retries });
                         return delay;
                     },
                 },
             });
 
             this.client.on('error', (err) => {
-                logger.error('Redis Client Error', { error: err.message });
+                logger.error('Redis Cache Client Error', { error: err.message });
             });
 
             this.client.on('connect', () => {
-                logger.info('Redis connecting...');
+                logger.info('Redis Cache connecting...');
             });
 
             this.client.on('ready', () => {
-                logger.info('Redis client ready');
+                logger.info('Redis Cache client ready');
                 this.isConnected = true;
             });
 
             this.client.on('reconnecting', () => {
-                logger.warn('Redis reconnecting...');
+                logger.warn('Redis Cache reconnecting...');
             });
 
             this.client.on('end', () => {
-                logger.info('Redis connection closed');
+                logger.info('Redis Cache connection closed');
                 this.isConnected = false;
             });
 
             await this.client.connect();
-            logger.info('Redis connected successfully', {
-                url: config.REDIS_URL.replace(/\/\/.*@/, '//***@'),
+            logger.info('Redis Cache connected successfully', {
+                url: config.REDIS_CACHE_URL.replace(/\/\/.*@/, '//***@'),
             });
         } catch (error) {
-            logger.error('Failed to connect to Redis', {
+            logger.error('Failed to connect to Redis Cache', {
                 error: error instanceof Error ? error.message : 'Unknown error',
             });
             throw error;
@@ -68,13 +68,13 @@ class RedisService {
             await this.client.quit();
             this.client = null;
             this.isConnected = false;
-            logger.info('Redis disconnected');
+            logger.info('Redis Cache disconnected');
         }
     }
 
     getClient(): RedisClientType {
         if (!this.client || !this.isConnected) {
-            throw new Error('Redis client not connected');
+            throw new Error('Redis Cache client not connected');
         }
         return this.client;
     }
@@ -88,7 +88,7 @@ class RedisService {
             const result = await this.getClient().get(key);
             return result ?? null;
         } catch (error) {
-            logger.error('Redis GET error', {
+            logger.error('Redis Cache GET error', {
                 key,
                 error: error instanceof Error ? error.message : 'Unknown error',
             });
@@ -109,7 +109,7 @@ class RedisService {
             const result = await this.getClient().set(key, value);
             return result ?? null;
         } catch (error) {
-            logger.error('Redis SET error', {
+            logger.error('Redis Cache SET error', {
                 key,
                 error: error instanceof Error ? error.message : 'Unknown error',
             });
@@ -121,7 +121,7 @@ class RedisService {
         try {
             return await this.getClient().del(key);
         } catch (error) {
-            logger.error('Redis DEL error', {
+            logger.error('Redis Cache DEL error', {
                 key,
                 error: error instanceof Error ? error.message : 'Unknown error',
             });
@@ -133,7 +133,7 @@ class RedisService {
         try {
             return await this.getClient().exists(key);
         } catch (error) {
-            logger.error('Redis EXISTS error', {
+            logger.error('Redis Cache EXISTS error', {
                 key,
                 error: error instanceof Error ? error.message : 'Unknown error',
             });
@@ -147,7 +147,7 @@ class RedisService {
             const result = await this.set(key, serialized, ttl);
             return result !== null;
         } catch (error) {
-            logger.error('Redis setJSON error', {
+            logger.error('Redis Cache setJSON error', {
                 key,
                 error: error instanceof Error ? error.message : 'Unknown error',
             });
@@ -161,7 +161,7 @@ class RedisService {
             if (!value) return null;
             return JSON.parse(value) as T;
         } catch (error) {
-            logger.error('Redis getJSON error', {
+            logger.error('Redis Cache getJSON error', {
                 key,
                 error: error instanceof Error ? error.message : 'Unknown error',
             });
@@ -175,7 +175,7 @@ class RedisService {
             if (keys.length === 0) return 0;
             return await this.getClient().del(keys);
         } catch (error) {
-            logger.error('Redis invalidatePattern error', {
+            logger.error('Redis Cache invalidatePattern error', {
                 pattern,
                 error: error instanceof Error ? error.message : 'Unknown error',
             });
@@ -184,4 +184,4 @@ class RedisService {
     }
 }
 
-export const redisService = new RedisService();
+export const redisCacheService = new RedisCacheService();
