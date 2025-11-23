@@ -191,7 +191,7 @@ router.get(
             res.status(200).json({
                 success: true,
                 message: 'Permissions retrieved successfully',
-                data: { permissions },
+                data: permissions,
             });
         } catch (error) {
             logger.error('Error fetching current user permissions', {
