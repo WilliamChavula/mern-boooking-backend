@@ -44,30 +44,31 @@ services:
       timeout: 3s
       retries: 3
 
-  # api:
-  #   build:
-  #     context: .
-  #     dockerfile: Dockerfile
-  #   container_name: mern-booking-api
-  #   restart: unless-stopped
-  #   ports:
-  #     - "5050:5050"
-  #   env_file:
-  #     - ./.env
-  #   environment:
-  #     - MONGODB_URI=${MONGODB_URI}
-  #     - REDIS_CACHE_URL=${REDIS_CACHE_URL}
-  #     - REDIS_QUEUE_URL=${REDIS_QUEUE_URL}
-  #     - REDIS_RATE_LIMITER_URL=${REDIS_RATE_LIMITER_URL}
-  #     - CLOUDINARY_NAME=${CLOUDINARY_NAME}
-  #     - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
-  #     - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
-  #     - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
-  #     - SECRET_KEY=${SECRET_KEY}
-  #   depends_on:
-  #     - redis-cache
-  #     - redis-queue
-  #     - redis-rate-limiter
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mern-booking-api
+    restart: unless-stopped
+    ports:
+      - "5050:5050"
+    env_file:
+      - ./.env
+    environment:
+      - MONGODB_URI=${MONGODB_URI}
+      - REDIS_CACHE_URL=${REDIS_CACHE_URL}
+      - REDIS_QUEUE_URL=${REDIS_QUEUE_URL}
+      - REDIS_RATE_LIMITER_URL=${REDIS_RATE_LIMITER_URL}
+      - CLOUDINARY_NAME=${CLOUDINARY_NAME}
+      - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
+      - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - SECRET_KEY=${SECRET_KEY}
+    depends_on:
+      - redis-cache
+      - redis-queue
+      - redis-rate-limiter
+    command: pnpm dev
 
 volumes:
   redis_cache_data:
