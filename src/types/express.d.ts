@@ -9,6 +9,7 @@ declare global {
                 email: string;
                 permissions?: PermissionName[];
             };
+            anonymous?: boolean;
         }
     }
 }

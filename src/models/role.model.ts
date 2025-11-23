@@ -6,6 +6,7 @@ import { PermissionType } from './permission.model';
  */
 export enum RoleName {
     USER = 'user',
+    ANONYMOUS = 'anonymous',
     HOTEL_STAFF = 'hotel_staff',
     HOTEL_ADMIN = 'hotel_admin',
     SUPER_ADMIN = 'super_admin',

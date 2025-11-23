@@ -176,10 +176,11 @@ router.get(
     verifyToken,
     async (req: Request, res: Response<PermissionResponseSchema>) => {
         try {
-            if (!req.user || !req.user.userId) {
-                res.status(401).json({
-                    success: false,
-                    message: 'Authentication required',
+            if (req.anonymous || !req.user || !req.user.userId) {
+                res.status(200).json({
+                    success: true,
+                    message: 'Permissions retrieved successfully',
+                    data: [PermissionName.HOTELS_READ],
                 });
                 return;
             }

@@ -1,19 +1,48 @@
 import type { Request, Response, NextFunction } from 'express';
 import { PermissionName } from '../models/permission.model';
-import { userHasPermission } from '../services/permission.service';
+import {
+    userHasPermission,
+    anonymousHasPermission,
+} from '../services/permission.service';
 import { logger } from '../utils/logger';
 
 /**
  * Generic permission checker middleware factory
  * @param requiredPermission - The permission required to access the route
+ * @param options - Optional configuration
+ * @param options.allowAnonymous - Whether to allow anonymous access if anonymous role has the permission
  * @returns Express middleware function
  */
-export const requirePermission = (requiredPermission: PermissionName) => {
+export const requirePermission = (
+    requiredPermission: PermissionName,
+    options?: { allowAnonymous?: boolean }
+) => {
     return async (req: Request, res: Response, next: NextFunction) => {
         try {
-            // Check if user is authenticated
-            if (!req.user || !req.user.userId) {
-                logger.warn('Unauthorized access attempt - no user in request');
+            // Handle anonymous user
+            if (req.anonymous || !req.user || !req.user.userId) {
+                // Check if anonymous access is allowed for this route
+                if (options?.allowAnonymous) {
+                    const anonymousAllowed =
+                        await anonymousHasPermission(requiredPermission);
+
+                    if (anonymousAllowed) {
+                        logger.debug('Anonymous access granted', {
+                            requiredPermission,
+                        });
+                        next();
+                        return;
+                    }
+                }
+
+                // Anonymous not allowed or doesn't have permission
+                logger.warn(
+                    'Unauthorized access attempt - anonymous user denied',
+                    {
+                        requiredPermission,
+                        allowAnonymous: options?.allowAnonymous,
+                    }
+                );
                 res.status(401).json({
                     success: false,
                     message: 'Authentication required',
@@ -57,9 +86,11 @@ export const requirePermission = (requiredPermission: PermissionName) => {
 };
 
 /**
- * Policy: Can view/read hotels
+ * Policy: Can view/read hotels (allows anonymous users)
  */
-export const CanViewHotel = requirePermission(PermissionName.HOTELS_READ);
+export const CanViewHotel = requirePermission(PermissionName.HOTELS_READ, {
+    allowAnonymous: true,
+});
 
 /**
  * Policy: Can book hotels
@@ -98,13 +129,44 @@ export const CanRevokePermissions = requirePermission(
 /**
  * Middleware to check if user has ANY of the provided permissions
  * @param permissions - Array of permissions, user needs at least one
+ * @param options - Optional configuration
+ * @param options.allowAnonymous - Whether to allow anonymous access if anonymous role has any permission
  * @returns Express middleware function
  */
-export const requireAnyPermission = (permissions: PermissionName[]) => {
+export const requireAnyPermission = (
+    permissions: PermissionName[],
+    options?: { allowAnonymous?: boolean }
+) => {
     return async (req: Request, res: Response, next: NextFunction) => {
         try {
-            if (!req.user || !req.user.userId) {
-                logger.warn('Unauthorized access attempt - no user in request');
+            // Handle anonymous user
+            if (req.anonymous || !req.user || !req.user.userId) {
+                if (options?.allowAnonymous) {
+                    const anonymousChecks = await Promise.all(
+                        permissions.map(permission =>
+                            anonymousHasPermission(permission)
+                        )
+                    );
+
+                    const anonymousHasAny = anonymousChecks.some(
+                        hasPermission => hasPermission
+                    );
+
+                    if (anonymousHasAny) {
+                        logger.debug(
+                            'Anonymous access granted (any permission)',
+                            {
+                                requiredPermissions: permissions,
+                            }
+                        );
+                        next();
+                        return;
+                    }
+                }
+
+                logger.warn(
+                    'Unauthorized access attempt - anonymous user denied'
+                );
                 res.status(401).json({
                     success: false,
                     message: 'Authentication required',
@@ -157,13 +219,44 @@ export const requireAnyPermission = (permissions: PermissionName[]) => {
 /**
  * Middleware to check if user has ALL of the provided permissions
  * @param permissions - Array of permissions, user needs all of them
+ * @param options - Optional configuration
+ * @param options.allowAnonymous - Whether to allow anonymous access if anonymous role has all permissions
  * @returns Express middleware function
  */
-export const requireAllPermissions = (permissions: PermissionName[]) => {
+export const requireAllPermissions = (
+    permissions: PermissionName[],
+    options?: { allowAnonymous?: boolean }
+) => {
     return async (req: Request, res: Response, next: NextFunction) => {
         try {
-            if (!req.user || !req.user.userId) {
-                logger.warn('Unauthorized access attempt - no user in request');
+            // Handle anonymous user
+            if (req.anonymous || !req.user || !req.user.userId) {
+                if (options?.allowAnonymous) {
+                    const anonymousChecks = await Promise.all(
+                        permissions.map(permission =>
+                            anonymousHasPermission(permission)
+                        )
+                    );
+
+                    const anonymousHasAll = anonymousChecks.every(
+                        hasPermission => hasPermission
+                    );
+
+                    if (anonymousHasAll) {
+                        logger.debug(
+                            'Anonymous access granted (all permissions)',
+                            {
+                                requiredPermissions: permissions,
+                            }
+                        );
+                        next();
+                        return;
+                    }
+                }
+
+                logger.warn(
+                    'Unauthorized access attempt - anonymous user denied'
+                );
                 res.status(401).json({
                     success: false,
                     message: 'Authentication required',

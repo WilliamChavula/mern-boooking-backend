@@ -80,6 +80,45 @@ export const userHasPermission = async (
 };
 
 /**
+ * Check if anonymous role has a specific permission
+ * @param permission - The permission to check
+ * @returns True if anonymous role has the permission
+ */
+export const anonymousHasPermission = async (
+    permission: PermissionName
+): Promise<boolean> => {
+    try {
+        const anonymousRole = await Role.findOne({
+            name: RoleName.ANONYMOUS,
+        }).populate('permissions');
+
+        if (!anonymousRole || !anonymousRole.permissions) {
+            logger.debug('Anonymous role not found or has no permissions');
+            return false;
+        }
+
+        const permissions = anonymousRole.permissions.map(
+            (p: any) => p.name as PermissionName
+        );
+
+        const hasPermission = permissions.includes(permission);
+
+        logger.debug('Anonymous permission check result', {
+            permission,
+            hasPermission,
+        });
+
+        return hasPermission;
+    } catch (error) {
+        logger.error('Error checking anonymous permission', {
+            permission,
+            error: error instanceof Error ? error.message : 'Unknown error',
+        });
+        return false;
+    }
+};
+
+/**
  * Assign a role to a user
  * @param userId - The user's ID
  * @param roleName - The role name to assign

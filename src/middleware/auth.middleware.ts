@@ -19,10 +19,8 @@ export function verifyToken(
     const token = req.cookies['auth_token'] as string;
     if (!token) {
         logger.warn('No token provided in request');
-        res.status(401).json({
-            success: false,
-            message: 'No token provided',
-        });
+        req.anonymous = true;
+        next();
         return;
     }
 

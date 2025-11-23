@@ -12,14 +12,18 @@ const getStore = () => {
     try {
         if (redisRateLimiterService.isReady()) {
             return new RedisStore({
-                sendCommand: (...args: string[]) => redisRateLimiterService.getClient().sendCommand(args),
+                sendCommand: (...args: string[]) =>
+                    redisRateLimiterService.getClient().sendCommand(args),
                 prefix: 'rate-limit:',
             });
         }
     } catch (error) {
-        logger.warn('Redis Rate Limiter not available, using memory store for rate limiting', {
-            error: error instanceof Error ? error.message : 'Unknown error',
-        });
+        logger.warn(
+            'Redis Rate Limiter not available, using memory store for rate limiting',
+            {
+                error: error instanceof Error ? error.message : 'Unknown error',
+            }
+        );
     }
     return undefined; // Use default memory store
 };
@@ -30,7 +34,7 @@ const getStore = () => {
  */
 export const apiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // Limit each IP to 100 requests per windowMs
+    max: 10000, // Limit each IP to 100 requests per windowMs
     store: getStore(),
     message: {
         status: 'error',

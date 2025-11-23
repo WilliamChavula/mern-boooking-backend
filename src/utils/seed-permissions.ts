@@ -102,6 +102,16 @@ const seedRoles = async () => {
                 'Permissions not found. Please seed permissions first.'
             );
         }
+        // Anonymous role: can only read hotels
+        await Role.findOneAndUpdate(
+            { name: RoleName.ANONYMOUS },
+            {
+                name: RoleName.ANONYMOUS,
+                description: 'Anonymous user - limited access',
+                permissions: [readPermission._id],
+            },
+            { upsert: true, new: true }
+        );
 
         // User role: can read and book hotels
         await Role.findOneAndUpdate(
