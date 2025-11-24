@@ -3,6 +3,7 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import mongoose from 'mongoose';
 import { logger } from '../src/utils/logger';
 import { Role, RoleName } from '../src/models/role.model';
+import { Permission, PermissionName } from '../src/models/permission.model';
 
 let mongoServer: MongoMemoryServer;
 
@@ -24,14 +25,32 @@ beforeAll(async () => {
 
         console.log('✓ Connected to MongoDB Memory Server');
 
-        // Create default role for tests
-        await Role.create({
-            name: RoleName.USER,
-            description: 'Default user role',
-            permissions: [],
+        // Seed permissions
+        const readPermission = await Permission.create({
+            name: PermissionName.HOTELS_READ,
+            description: 'Permission to view/read hotel information',
+        });
+        const bookPermission = await Permission.create({
+            name: PermissionName.HOTELS_BOOK,
+            description: 'Permission to book hotel rooms',
         });
 
-        console.log('✓ Created default USER role');
+        // Create default roles with permissions for tests
+        await Role.create({
+            name: RoleName.USER,
+            description: 'Regular user - can view and book hotels',
+            permissions: [readPermission._id, bookPermission._id],
+        });
+
+        await Role.create({
+            name: RoleName.ANONYMOUS,
+            description: 'Anonymous user - limited access',
+            permissions: [readPermission._id],
+        });
+
+        console.log(
+            '✓ Created default USER and ANONYMOUS roles with permissions'
+        );
     } catch (error) {
         console.error('Failed to setup test database:', error);
         throw error;
@@ -43,8 +62,8 @@ afterEach(async () => {
     if (mongoose.connection.readyState !== 0) {
         const collections = mongoose.connection.collections;
         for (const key in collections) {
-            // Don't delete the Role collection to keep default role
-            if (key !== 'roles') {
+            // Don't delete the Role and Permission collections to keep seeded data
+            if (key !== 'roles' && key !== 'permissions') {
                 await collections[key].deleteMany({});
             }
         }
