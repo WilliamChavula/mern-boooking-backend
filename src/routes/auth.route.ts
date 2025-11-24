@@ -72,6 +72,7 @@ router.post(
                 secure: config.NODE_ENV === 'production',
                 sameSite: config.NODE_ENV !== 'production' ? 'lax' : 'none',
                 maxAge: 24 * 60 * 60 * 1000,
+                path: '/',
             });
 
             res.status(200).json({
@@ -96,9 +97,10 @@ router.post(
 router.post('/logout', async (_req: Request, res: Response) => {
     res.cookie('auth_token', '', {
         expires: new Date(0),
-        sameSite: config.NODE_ENV === 'production' ? 'none' : 'lax',
+        sameSite: config.NODE_ENV !== 'production' ? 'lax' : 'none',
         httpOnly: true,
         secure: config.NODE_ENV === 'production',
+        path: '/',
     });
 
     logger.info('User logged out');

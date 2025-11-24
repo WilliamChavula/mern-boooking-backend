@@ -79,7 +79,7 @@ app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
     logger.error('Unhandled error', {
         error: err.message,
         stack: err.stack,
-        correlationId: (req as any).correlationId,
+        correlationId: req.correlationId,
         method: req.method,
         url: req.url,
     });
@@ -87,7 +87,7 @@ app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
     res.status(500).json({
         status: 'error',
         message: 'An unexpected error occurred',
-        correlationId: (req as any).correlationId,
+        correlationId: req.correlationId,
     });
 });
 
