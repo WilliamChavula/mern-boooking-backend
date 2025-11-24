@@ -10,6 +10,11 @@ vi.mock('../src/utils/queue-helpers', () => ({
     queueImageUpload: vi.fn().mockResolvedValue('test-job-id'),
 }));
 
+vi.mock('../src/utils/email-helpers', () => ({
+    queueBookingConfirmationEmail: vi.fn().mockResolvedValue('test-job-id'),
+    queueEmail: vi.fn().mockResolvedValue('test-job-id'),
+}));
+
 let mongoServer: MongoMemoryServer;
 
 // Setup MongoDB Memory Server before all tests

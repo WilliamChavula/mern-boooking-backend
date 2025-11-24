@@ -13,6 +13,11 @@ vi.mock('../../src/utils/logger', () => ({
     },
 }));
 
+// Mock email helpers
+vi.mock('../../src/utils/email-helpers', () => ({
+    queueBookingConfirmationEmail: vi.fn().mockResolvedValue('test-job-id'),
+}));
+
 // Mock Hotel model
 vi.mock('../../src/models/hotel.model', () => ({
     default: {
@@ -413,7 +418,12 @@ describe('Hotels Service', () => {
             const mockUpdatedHotel = {
                 _id: hotelId,
                 name: 'Test Hotel',
-                bookings: [booking],
+                bookings: [
+                    {
+                        ...booking,
+                        _id: new mongoose.Types.ObjectId(),
+                    },
+                ],
             };
 
             vi.spyOn(mongoose.Types.ObjectId, 'isValid').mockReturnValue(true);

@@ -6,7 +6,7 @@ import Hotel from '../../src/models/hotel.model';
 import { Role, RoleName } from '../../src/models/role.model';
 import { PermissionName } from '../../src/models/permission.model';
 import authService from '../../src/services/auth.service';
-import { mockUserData, mockHotelData } from '../fixtures/data';
+import { mockHotelData } from '../fixtures/data';
 
 // Helper function to add hotel fields to multipart request
 function addHotelFields(req: any, hotel: any) {
