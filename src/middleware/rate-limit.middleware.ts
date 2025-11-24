@@ -3,6 +3,7 @@ import { RedisStore } from 'rate-limit-redis';
 import { Request, Response } from 'express';
 import { logger } from '../utils/logger';
 import { redisRateLimiterService } from '../services/redis-rate-limiter.service';
+import { config } from '../config';
 
 /**
  * Get Redis store for rate limiting
@@ -35,6 +36,7 @@ const getStore = () => {
 export const apiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 100, // Limit each IP to 100 requests per windowMs
+    skip: () => config.NODE_ENV === 'test', // Skip rate limiting in test environment
     store: getStore(),
     message: {
         status: 'error',
@@ -64,6 +66,7 @@ export const apiLimiter = rateLimit({
 export const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 5, // Limit each IP to 5 login requests per windowMs
+    skip: () => config.NODE_ENV === 'test', // Skip rate limiting in test environment
     store: getStore(),
     skipSuccessfulRequests: false,
     message: {
@@ -94,6 +97,7 @@ export const authLimiter = rateLimit({
 export const registrationLimiter = rateLimit({
     windowMs: 60 * 60 * 1000, // 1 hour
     max: 3,
+    skip: () => config.NODE_ENV === 'test', // Skip rate limiting in test environment
     store: getStore(),
     skipSuccessfulRequests: true, // Don't count successful registrations
     message: {
