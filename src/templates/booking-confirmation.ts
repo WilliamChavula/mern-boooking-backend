@@ -1,13 +1,13 @@
 export const bookingConfirmationTemplate = (
-    firstName,
-    lastName,
-    bookingId,
-    hotelName,
-    checkInFormatted,
-    checkOutFormatted,
-    nights,
-    guests,
-    totalCost
+    firstName: string,
+    lastName: string,
+    bookingId: string,
+    hotelName: string,
+    checkInFormatted: string,
+    checkOutFormatted: string,
+    nights: number,
+    guests: string,
+    totalCost: number
 ) => {
     return `
 <!DOCTYPE html>
