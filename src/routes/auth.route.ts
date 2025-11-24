@@ -33,7 +33,7 @@ router.post(
                 return;
             }
 
-            const passwordsMatch = authService.passwordCompare(
+            const passwordsMatch = await authService.passwordCompare(
                 password,
                 user.password
             );
