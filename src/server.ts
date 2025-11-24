@@ -10,8 +10,10 @@ import { config } from './config';
 import { logger } from './utils/logger';
 import { redisCacheService } from './services/redis-cache.service';
 import { redisRateLimiterService } from './services/redis-rate-limiter.service';
+import { emailService } from './services/email.service';
 import { queueService } from './services/queue.service';
 import { initializeImageUploadWorker } from './workers/image-upload.worker';
+import { initializeEmailWorker } from './workers/email.worker';
 import { requestLogger } from './middleware/request-logger.middleware';
 import { getHelmetConfig } from './middleware/helmet.middleware';
 import { getCorsOptions } from './middleware/cors.middleware';
@@ -144,10 +146,27 @@ const startServer = async () => {
         try {
             await queueService.initialize();
             initializeImageUploadWorker();
+            initializeEmailWorker();
             logger.info('Queue service and workers initialized');
         } catch (error) {
             logger.warn(
                 'Queue service initialization failed, image uploads will be synchronous',
+                {
+                    error:
+                        error instanceof Error
+                            ? error.message
+                            : 'Unknown error',
+                }
+            );
+        }
+
+        // Initialize email service
+        try {
+            await emailService.initialize();
+            logger.info('Email service initialized');
+        } catch (error) {
+            logger.warn(
+                'Email service initialization failed, emails will not be sent',
                 {
                     error:
                         error instanceof Error
@@ -188,6 +207,19 @@ const startServer = async () => {
                 logger.info('Queue service shut down');
             } catch (error) {
                 logger.error('Error shutting down queue service', {
+                    error:
+                        error instanceof Error
+                            ? error.message
+                            : 'Unknown error',
+                });
+            }
+
+            // Close email service
+            try {
+                await emailService.shutdown();
+                logger.info('Email service shut down');
+            } catch (error) {
+                logger.error('Error shutting down email service', {
                     error:
                         error instanceof Error
                             ? error.message

@@ -30,6 +30,14 @@ const configSchema = z.object({
         .string()
         .min(8, 'Password must be at least 8 characters long')
         .max(64, 'Password cannot exceed 64 characters'),
+
+    // SMTP Email Configuration
+    SMTP_HOST: z.string({ message: 'SMTP_HOST is required' }),
+    SMTP_PORT: z.coerce.number({ message: 'SMTP_PORT is required' }),
+    SMTP_SECURE: z.coerce.boolean().default(false),
+    SMTP_USER: z.string({ message: 'SMTP_USER is required' }),
+    SMTP_PASS: z.string({ message: 'SMTP_PASS is required' }),
+    SMTP_FROM: z.string().email('SMTP_FROM must be a valid email address'),
 });
 
 export const config = configSchema.parse(process.env);

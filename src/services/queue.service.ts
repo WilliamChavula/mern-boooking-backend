@@ -43,6 +43,7 @@ export interface EmailJobData {
     subject: string;
     template: string;
     data: Record<string, any>;
+    correlationId?: string;
 }
 
 // Queue names

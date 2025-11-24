@@ -1,10 +1,12 @@
 import mongoose, { FilterQuery, SortOrder } from 'mongoose';
 import Hotel, { HotelType } from '../models/hotel.model';
 import {
+    BookingTypeSchema,
     CreateBookingSchema,
     HotelParamsSchema,
 } from '../schemas/hotel.schema';
 import { logger } from '../utils/logger';
+import { queueBookingConfirmationEmail } from '../utils/email-helpers';
 
 /**
  * Retrieves the latest hotels sorted by last update
@@ -300,6 +302,23 @@ export const findHotelByIdAndUpdateBooking = async (
             logger.warn('Hotel not found for booking', { hotelId });
             return null;
         }
+
+        const bookingForUser = updatedHotel.bookings[
+            updatedHotel.bookings.length - 1
+        ] as BookingTypeSchema;
+
+        await queueBookingConfirmationEmail({
+            to: bookingForUser.email,
+            firstName: bookingForUser.firstName,
+            lastName: bookingForUser.lastName,
+            hotelName: updatedHotel.name,
+            checkIn: bookingForUser.checkIn,
+            checkOut: bookingForUser.checkOut,
+            adultCount: bookingForUser.adultCount,
+            childCount: bookingForUser.childCount,
+            totalCost: bookingForUser.totalStayCost,
+            bookingId: bookingForUser?._id.toString(),
+        });
 
         logger.info('Booking added to hotel', {
             hotelId,
