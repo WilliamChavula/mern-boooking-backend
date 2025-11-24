@@ -65,11 +65,16 @@ router.post(
             });
             return;
         } catch (e) {
-            if (e instanceof Error && e.message.includes('Duplicate')) {
+            if (
+                e instanceof Error &&
+                (e.message.includes('Duplicate') ||
+                    e.message.includes('User with this email already exists'))
+            ) {
                 res.status(409).json({
                     success: false,
                     message: 'User with this email already exists',
                 });
+                return;
             }
 
             if (
@@ -97,17 +102,21 @@ router.get(
     '/validate-token',
     verifyToken,
     async (req: Request, res: Response<TokenResponseSchema>) => {
+        if (!req.user) {
+            return res.status(401).json({
+                success: false,
+                message: 'No user authenticated',
+            });
+        }
         logger.info('Token validated successfully', {
             userId: req.user.userId,
             email: req.user.email,
         });
-
         res.status(200).json({
             success: true,
             message: 'User validated successfully',
             data: req.user,
         });
-
         return;
     }
 );
@@ -116,12 +125,17 @@ router.get(
     '/me',
     verifyToken,
     async (req: Request, res: Response<UserResponseSchema>) => {
+        if (!req.user) {
+            res.status(401).json({
+                success: false,
+                message: 'No user authenticated',
+            });
+            return;
+        }
         const userId = req.user.userId;
-
         try {
             logger.info('Fetching user profile', { userId });
             const user = await usersService.findById(userId);
-
             if (!user) {
                 logger.error('User not found', { userId });
                 res.status(404).json({
@@ -130,7 +144,6 @@ router.get(
                 });
                 return;
             }
-
             logger.info('User profile fetched successfully', { userId });
             res.status(200).json({
                 success: true,
