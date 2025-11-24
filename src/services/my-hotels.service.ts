@@ -42,6 +42,7 @@ export const createHotel = async (
         logger.error('Database error while creating hotel', {
             userId: data.userId,
             error: error instanceof Error ? error.message : 'Unknown error',
+            stack: error instanceof Error ? error.stack : undefined,
         });
         throw new Error('Failed to create hotel');
     }
@@ -213,10 +214,7 @@ export const updateHotel = async (
  * @returns Hotel document or null if not found
  * @throws Error if database query fails or ID is invalid
  */
-export const findHotelForUpdate = async (
-    hotelId: string,
-    userId: string
-) => {
+export const findHotelForUpdate = async (hotelId: string, userId: string) => {
     try {
         // Validate ObjectId format
         if (!mongoose.Types.ObjectId.isValid(hotelId)) {
@@ -248,9 +246,12 @@ export const findHotelForUpdate = async (
         return hotel;
     } catch (error) {
         if (error instanceof Error && error.message.includes('Invalid')) {
-            logger.error('Find hotel for update failed: Invalid hotel ID format', {
-                error,
-            });
+            logger.error(
+                'Find hotel for update failed: Invalid hotel ID format',
+                {
+                    error,
+                }
+            );
             throw error;
         }
 

@@ -1,9 +1,14 @@
-import { beforeAll, afterAll, afterEach, beforeEach } from 'vitest';
+import { beforeAll, afterAll, afterEach, beforeEach, vi } from 'vitest';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import mongoose from 'mongoose';
 import { logger } from '../src/utils/logger';
 import { Role, RoleName } from '../src/models/role.model';
 import { Permission, PermissionName } from '../src/models/permission.model';
+
+// Mock the queue helpers to avoid Redis dependency in tests
+vi.mock('../src/utils/queue-helpers', () => ({
+    queueImageUpload: vi.fn().mockResolvedValue('test-job-id'),
+}));
 
 let mongoServer: MongoMemoryServer;
 
@@ -34,6 +39,14 @@ beforeAll(async () => {
             name: PermissionName.HOTELS_BOOK,
             description: 'Permission to book hotel rooms',
         });
+        const createPermission = await Permission.create({
+            name: PermissionName.HOTELS_CREATE,
+            description: 'Permission to create new hotels',
+        });
+        const editPermission = await Permission.create({
+            name: PermissionName.HOTELS_EDIT,
+            description: 'Permission to edit existing hotels',
+        });
 
         // Create default roles with permissions for tests
         await Role.create({
@@ -43,13 +56,24 @@ beforeAll(async () => {
         });
 
         await Role.create({
+            name: RoleName.HOTEL_STAFF,
+            description: 'Hotel staff - can view, book, and create hotels',
+            permissions: [
+                readPermission._id,
+                bookPermission._id,
+                createPermission._id,
+                editPermission._id,
+            ],
+        });
+
+        await Role.create({
             name: RoleName.ANONYMOUS,
             description: 'Anonymous user - limited access',
             permissions: [readPermission._id],
         });
 
         console.log(
-            '✓ Created default USER and ANONYMOUS roles with permissions'
+            '✓ Created default USER, HOTEL_STAFF and ANONYMOUS roles with permissions'
         );
     } catch (error) {
         console.error('Failed to setup test database:', error);

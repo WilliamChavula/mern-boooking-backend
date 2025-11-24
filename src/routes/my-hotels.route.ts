@@ -100,15 +100,18 @@ router.post(
                     message: 'Failed to create a hotel.',
                     error: issues,
                 });
+                return;
             }
             logger.error('Error creating hotel', {
                 error: (e as Error).message,
-                userId: req.user.userId,
+                stack: (e as Error).stack,
+                userId: req.user?.userId,
             });
             res.status(500).send({
                 success: false,
                 message: 'Something went wrong',
             });
+            return;
         }
     }
 );
@@ -118,6 +121,14 @@ router.get(
     verifyToken,
     async (req: Request, res: Response<HotelsResponse>) => {
         try {
+            if (!req.user) {
+                res.status(401).json({
+                    success: false,
+                    message: 'Authentication required',
+                    data: [],
+                });
+                return;
+            }
             const hotels = await getMyHotels(req.user.userId);
             res.status(200).json({
                 success: true,
@@ -140,6 +151,14 @@ router.get(
     verifyToken,
     async (req: Request<HotelParams>, res: Response<GetHotelResponse>) => {
         try {
+            if (!req.user) {
+                res.status(401).json({
+                    success: false,
+                    message: 'Authentication required',
+                });
+                return;
+            }
+
             const { hotelId } = await hotelParams.parseAsync(req.params);
             const userId = req.user.userId;
 
