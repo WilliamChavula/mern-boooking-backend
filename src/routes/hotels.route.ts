@@ -173,6 +173,15 @@ router.get(
                     message: 'Failed to create a hotel.',
                     error: issues,
                 });
+                return;
+            }
+            if (e instanceof Error && e.message === 'Invalid hotel ID format') {
+                logger.error('Invalid hotel ID format', { error: e.message });
+                res.status(400).json({
+                    success: false,
+                    message: 'Invalid hotel ID format',
+                });
+                return;
             }
             logger.error('Error creating Hotels', e);
             res.status(500).send({
@@ -186,7 +195,7 @@ router.get(
 router.post(
     '/:hotelId/bookings/payment-intent',
     verifyToken,
-    // CanBookHotel,
+    CanBookHotel,
     async (
         req: Request<HotelParams, {}, PaymentIntentSchema>,
         res: Response<PaymentIntentResponseSchema>
