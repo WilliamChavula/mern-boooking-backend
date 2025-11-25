@@ -28,7 +28,7 @@ router.post(
 
                 res.status(400).json({
                     success: false,
-                    message: 'invalid credentials',
+                    message: 'Invalid credentials',
                 });
                 return;
             }
@@ -46,7 +46,7 @@ router.post(
 
                 res.status(400).json({
                     success: false,
-                    message: 'invalid credentials',
+                    message: 'Invalid credentials',
                 });
                 return;
             }
