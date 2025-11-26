@@ -48,7 +48,7 @@ export const apiLimiter = rateLimit({
         logger.warn('Rate limit exceeded', {
             ip: req.ip,
             path: req.path,
-            correlationId: (req as any).correlationId,
+            correlationId: req.correlationId,
         });
         res.status(429).json({
             status: 'error',
@@ -78,7 +78,7 @@ export const authLimiter = rateLimit({
             ip: req.ip,
             path: req.path,
             email: req.body?.email,
-            correlationId: (req as any).correlationId,
+            correlationId: req.correlationId,
         });
         res.status(429).json({
             status: 'error',
@@ -108,7 +108,7 @@ export const registrationLimiter = rateLimit({
         logger.warn('Registration rate limit exceeded', {
             ip: req.ip,
             email: req.body?.email,
-            correlationId: (req as any).correlationId,
+            correlationId: req.correlationId,
         });
         res.status(429).json({
             status: 'error',
@@ -134,7 +134,7 @@ export const passwordResetLimiter = rateLimit({
         logger.warn('Password reset rate limit exceeded', {
             ip: req.ip,
             email: req.body?.email,
-            correlationId: (req as any).correlationId,
+            correlationId: req.correlationId,
         });
         res.status(429).json({
             status: 'error',
@@ -161,8 +161,8 @@ export const bookingLimiter = rateLimit({
     handler: (req: Request, res: Response) => {
         logger.warn('Booking rate limit exceeded', {
             ip: req.ip,
-            userId: (req as any).user?.userId,
-            correlationId: (req as any).correlationId,
+            userId: req.user?.userId,
+            correlationId: req.correlationId,
         });
         res.status(429).json({
             status: 'error',

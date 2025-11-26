@@ -32,7 +32,7 @@ export const cacheMiddleware = (options: CacheMiddlewareOptions) => {
                 logger.debug('Serving from cache', {
                     key: cacheKey,
                     path: req.path,
-                    correlationId: (req as any).correlationId,
+                    correlationId: req.correlationId,
                 });
                 return res.json(cached);
             }
@@ -91,7 +91,7 @@ export const invalidateCacheMiddleware = (
                     logger.debug('Cache invalidated', {
                         pattern,
                         status: res.statusCode,
-                        correlationId: (req as any).correlationId,
+                        correlationId: req.correlationId,
                     });
                 }
             };
