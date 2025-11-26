@@ -4,12 +4,14 @@ import { verifyToken } from '../middleware/auth.middleware';
 import { findBookingsByUserId } from '../services/hotels.service';
 import { HotelSchema, UserBookingResponse } from '../schemas/hotel.schema';
 import { logger } from '../utils/logger';
+import { cacheMiddleware } from '../middleware/cache.middleware';
 
 const router: Router = express.Router();
 
 router.get(
     '/',
     verifyToken,
+    cacheMiddleware({ ttl: 3600 }),
     async (req: Request, res: Response<UserBookingResponse>) => {
         try {
             const { userId } = req.user;

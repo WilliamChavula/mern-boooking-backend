@@ -3,6 +3,8 @@ import Hotel from '../models/hotel.model';
 import type { HotelType } from '../models/hotel.model';
 import type { CreateHotelPayload } from '../schemas/my-hotel.schema';
 import { logger } from '../utils/logger';
+import { CacheService } from './cache.service';
+import { queueImageUpload } from '../utils/queue-helpers';
 
 /**
  * Creates a new hotel
@@ -27,6 +29,8 @@ export const createHotel = async (
             userId: hotel.userId,
             hotelName: hotel.name,
         });
+
+        await CacheService.invalidate(CacheService.Patterns.allHotels);
 
         return hotel.toObject();
     } catch (error) {
@@ -58,10 +62,16 @@ export const getMyHotels = async (userId: string): Promise<HotelType[]> => {
     try {
         logger.info('Fetching hotels for user', { userId });
 
-        const hotels = await Hotel.find({ userId })
-            .sort({ createdAt: -1 })
-            .lean<HotelType[]>()
-            .exec();
+        const hotels =
+            (await CacheService.getOrSet<HotelType[]>(
+                CacheService.Keys.userHotels(userId),
+                async () =>
+                    await Hotel.find({ userId })
+                        .sort({ createdAt: -1 })
+                        .lean<HotelType[]>()
+                        .exec(),
+                { ttl: 600 } // Cache for 10 minutes
+            )) ?? [];
 
         logger.info('User hotels retrieved', {
             userId,
@@ -101,9 +111,14 @@ export const getMyHotel = async (
 
         logger.info('Fetching hotel for user', { hotelId, userId });
 
-        const hotel = await Hotel.findOne({ _id: hotelId, userId })
-            .lean<HotelType>()
-            .exec();
+        const hotel = await CacheService.getOrSet<HotelType | null>(
+            CacheService.Keys.hotel(hotelId),
+            async () =>
+                await Hotel.findOne({ _id: hotelId, userId })
+                    .lean<HotelType>()
+                    .exec(),
+            { ttl: 600 } // Cache for 10 minutes
+        );
 
         if (!hotel) {
             logger.info('Hotel not found or not owned by user', {
@@ -191,6 +206,11 @@ export const updateHotel = async (
             hotelName: updatedHotel.name,
         });
 
+        await Promise.all([
+            CacheService.invalidate(CacheService.Keys.hotel(hotelId)),
+            CacheService.invalidate(CacheService.Keys.userHotels(userId)),
+        ]);
+
         return updatedHotel;
     } catch (error) {
         if (error instanceof Error && error.message.includes('Invalid')) {
@@ -214,7 +234,13 @@ export const updateHotel = async (
  * @returns Hotel document or null if not found
  * @throws Error if database query fails or ID is invalid
  */
-export const findHotelForUpdate = async (hotelId: string, userId: string) => {
+export const findHotelForUpdate = async (
+    hotelId: string,
+    userId: string,
+    validHotel: CreateHotelPayload,
+    imageFiles: Express.Multer.File[],
+    correlationId?: string
+) => {
     try {
         // Validate ObjectId format
         if (!mongoose.Types.ObjectId.isValid(hotelId)) {
@@ -243,7 +269,27 @@ export const findHotelForUpdate = async (hotelId: string, userId: string) => {
             hotelName: hotel.name,
         });
 
-        return hotel;
+        // Update hotel fields first (excluding images)
+        Object.assign(hotel, validHotel);
+        await hotel.save();
+
+        await CacheService.invalidate(CacheService.Keys.hotel(hotelId));
+        await CacheService.invalidate(CacheService.Keys.userHotels(userId));
+
+        // Queue image upload in background if there are new images
+        let jobId: string | undefined;
+
+        if (imageFiles && imageFiles.length > 0) {
+            jobId = await queueImageUpload(
+                imageFiles,
+                hotelId,
+                userId,
+                true, // merge with existing
+                correlationId
+            );
+        }
+
+        return { hotel, jobId };
     } catch (error) {
         if (error instanceof Error && error.message.includes('Invalid')) {
             logger.error(
@@ -298,6 +344,12 @@ export const deleteHotel = async (
                 userId,
                 hotelName: deletedHotel.name,
             });
+
+            await Promise.all([
+                CacheService.invalidate(CacheService.Keys.hotel(hotelId)),
+                CacheService.invalidate(CacheService.Keys.userHotels(userId)),
+            ]);
+
             return true;
         } else {
             logger.warn(

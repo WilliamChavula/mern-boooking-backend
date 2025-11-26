@@ -56,7 +56,7 @@ describe('Auth Routes Integration Tests', () => {
 
             expect(response.body).toMatchObject({
                 success: false,
-                message: 'invalid credentials',
+                message: 'Invalid credentials',
             });
         });
 
@@ -71,7 +71,7 @@ describe('Auth Routes Integration Tests', () => {
 
             expect(response.body).toMatchObject({
                 success: false,
-                message: 'invalid credentials',
+                message: 'Invalid credentials',
             });
         });
 

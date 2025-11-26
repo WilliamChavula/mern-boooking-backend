@@ -28,6 +28,10 @@ import { ZodError } from 'zod';
 import { parseZodError } from '../utils/parse-zod-error';
 import { logger } from '../utils/logger';
 import { queueImageUpload } from '../utils/queue-helpers';
+import {
+    cacheMiddleware,
+    invalidateCacheMiddleware,
+} from '../middleware/cache.middleware';
 
 const router: Router = express.Router();
 
@@ -42,6 +46,9 @@ router.post(
     '/',
     verifyToken,
     CanCreateHotel,
+    invalidateCacheMiddleware(
+        (req: Request) => `${req.originalUrl || req.url}`
+    ),
     multerUpload.array('imageFiles', 6),
     async (
         req: Request<{}, {}, CreateHotelPayload>,
@@ -119,6 +126,7 @@ router.post(
 router.get(
     '/',
     verifyToken,
+    cacheMiddleware({ ttl: 300 }),
     async (req: Request, res: Response<HotelsResponse>) => {
         try {
             if (!req.user) {
@@ -149,6 +157,7 @@ router.get(
 router.get(
     '/:hotelId',
     verifyToken,
+    cacheMiddleware({ ttl: 1800 }),
     async (req: Request<HotelParams>, res: Response<GetHotelResponse>) => {
         try {
             if (!req.user) {
@@ -196,6 +205,9 @@ router.put(
     '/:hotelId',
     verifyToken,
     CanEditHotel,
+    invalidateCacheMiddleware(
+        (req: Request) => `${req.originalUrl || req.url}`
+    ),
     multerUpload.array('imageFiles'),
     async (
         req: Request<HotelParams, {}, CreateHotelPayload>,
@@ -204,12 +216,20 @@ router.put(
         try {
             const { hotelId } = await hotelParams.parseAsync(req.params);
             const userId = req.user.userId;
-            const correlationId = (req as any).correlationId;
+            const correlationId = req.correlationId;
 
             const validHotel = await createHotelSchema.parseAsync(req.body);
 
+            const imageFiles = req.files as Express.Multer.File[];
+
             // Find the hotel document for update
-            const hotelDoc = await findHotelForUpdate(hotelId, userId);
+            const hotelDoc = await findHotelForUpdate(
+                hotelId,
+                userId,
+                validHotel,
+                imageFiles,
+                correlationId
+            );
 
             if (!hotelDoc) {
                 logger.warn('Hotel to update not found', { hotelId, userId });
@@ -220,35 +240,17 @@ router.put(
                 return;
             }
 
-            // Update hotel fields first (excluding images)
-            Object.assign(hotelDoc, validHotel);
-            await hotelDoc.save();
-
-            // Queue image upload in background if there are new images
-            const imageFiles = req.files as Express.Multer.File[];
-            let jobId: string | undefined;
-
-            if (imageFiles && imageFiles.length > 0) {
-                jobId = await queueImageUpload(
-                    imageFiles,
-                    hotelId,
-                    userId,
-                    true, // merge with existing
-                    correlationId
-                );
-            }
-
             logger.info('Hotel updated successfully', {
                 hotelId,
                 userId,
-                imageJobId: jobId,
+                imageJobId: hotelDoc.jobId,
             });
             res.status(200).json({
                 success: true,
-                message: jobId
+                message: hotelDoc.jobId
                     ? 'Hotel updated successfully. Images are being processed in the background.'
                     : 'Hotel updated successfully',
-                data: hotelDoc.toObject() as any,
+                data: hotelDoc.hotel.toObject(),
             });
         } catch (e) {
             if (e instanceof ZodError) {

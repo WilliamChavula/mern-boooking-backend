@@ -36,6 +36,7 @@ import {
     CanBookHotel,
 } from '../middleware/permission.middleware';
 import { logger } from '../utils/logger';
+import { cacheMiddleware } from '../middleware/cache.middleware';
 
 const stripe = new Stripe(config.STRIPE_SECRET_KEY);
 
@@ -45,6 +46,7 @@ router.get(
     '/search',
     verifyToken,
     CanViewHotel,
+    cacheMiddleware({ ttl: 300 }),
     async (
         req: Request<{}, {}, {}, HotelParamsSchema>,
         res: Response<HotelSchemaPaginatedResponse>
@@ -109,6 +111,7 @@ router.get(
     '/',
     verifyToken,
     CanViewHotel,
+    cacheMiddleware({ ttl: 300 }),
     async (_req: Request, res: Response<GetAllHotelsResponseSchema>) => {
         try {
             const hotels = await getLatestHotels();
@@ -142,6 +145,7 @@ router.get(
     '/:hotelId',
     verifyToken,
     CanViewHotel,
+    cacheMiddleware({ ttl: 1800 }),
     async (req: Request<HotelParams>, res: Response<HotelSchemaResponse>) => {
         try {
             const { hotelId } = await hotelParams.parseAsync(req.params);

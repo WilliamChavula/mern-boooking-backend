@@ -122,27 +122,26 @@ export class CacheService {
         fetchFn: () => Promise<T>,
         options?: CacheOptions
     ): Promise<T | null> {
+        // Try to get from cache
+        const cached = await this.get<T>(key, options);
+        if (cached !== null) {
+            return cached;
+        }
+
+        // Fetch fresh data
+        const data = await fetchFn();
+        
+        // Store in cache (but don't fail if caching fails)
         try {
-            // Try to get from cache
-            const cached = await this.get<T>(key, options);
-            if (cached !== null) {
-                return cached;
-            }
-
-            // Fetch fresh data
-            const data = await fetchFn();
-            
-            // Store in cache
             await this.set(key, data, options);
-
-            return data;
         } catch (error) {
-            logger.error('Cache getOrSet error', {
+            logger.error('Cache SET failed in getOrSet', {
                 key,
                 error: error instanceof Error ? error.message : 'Unknown error',
             });
-            return null;
         }
+
+        return data;
     }
 
     // Cache keys for different entities

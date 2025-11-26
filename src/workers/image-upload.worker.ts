@@ -10,6 +10,7 @@ import {
     ImageUploadResult,
 } from '../services/queue.service';
 import Hotel from '../models/hotel.model';
+import { CacheService } from '../services/cache.service';
 
 // Configuration constants
 const UPLOAD_CONFIG = {
@@ -202,6 +203,7 @@ async function processImageUpload(
         }
 
         await hotel.save();
+        await CacheService.invalidate(CacheService.Keys.hotel(hotelId));
 
         const duration = Date.now() - startTime;
 

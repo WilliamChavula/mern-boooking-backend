@@ -7,6 +7,7 @@ import {
 } from '../schemas/hotel.schema';
 import { logger } from '../utils/logger';
 import { queueBookingConfirmationEmail } from '../utils/email-helpers';
+import { CacheService } from './cache.service';
 
 /**
  * Retrieves the latest hotels sorted by last update
@@ -20,11 +21,19 @@ export const getLatestHotels = async (
     try {
         logger.debug('Fetching latest hotels', { limit });
 
-        const hotels = await Hotel.find()
-            .sort({ createdAt: -1 })
-            .limit(limit)
-            .lean<HotelType[]>()
-            .exec();
+        const hotels =
+            (await CacheService.getOrSet<HotelType[]>(
+                CacheService.Keys.hotels(`latest:${limit}`),
+                async () =>
+                    await Hotel.find()
+                        .sort({ createdAt: -1 })
+                        .limit(limit)
+                        .lean<HotelType[]>()
+                        .exec(),
+                {
+                    ttl: 300, // Cache for 5 minutes
+                }
+            )) ?? [];
 
         logger.debug('Latest hotels retrieved', { count: hotels.length });
 
@@ -60,12 +69,22 @@ export const getAllHotels = async (
             hasQuery: Object.keys(query).length > 0,
         });
 
-        const hotels = await Hotel.find(query)
-            .sort(sortBy)
-            .skip(skip)
-            .limit(limit)
-            .lean<HotelType[]>()
-            .exec();
+        const hotels =
+            (await CacheService.getOrSet<HotelType[]>(
+                CacheService.Keys.hotels(
+                    `all:${JSON.stringify(query)}:${skip}:${limit}:${JSON.stringify(sortBy)}`
+                ),
+                async () =>
+                    await Hotel.find(query)
+                        .sort(sortBy)
+                        .skip(skip)
+                        .limit(limit)
+                        .lean<HotelType[]>()
+                        .exec(),
+                {
+                    ttl: 300, // Cache for 5 minutes
+                }
+            )) ?? [];
 
         logger.debug('Hotels retrieved', { count: hotels.length });
 
@@ -100,7 +119,13 @@ export const getHotelById = async (
 
         logger.info('Fetching hotel by ID', { hotelId });
 
-        const hotel = await Hotel.findById(hotelId).lean<HotelType>().exec();
+        const hotel = await CacheService.getOrSet<HotelType | null>(
+            CacheService.Keys.hotel(hotelId),
+            async () => await Hotel.findById(hotelId).lean<HotelType>().exec(),
+            {
+                ttl: 600, // Cache for 10 minutes
+            }
+        );
 
         if (!hotel) {
             logger.info('Hotel not found', { hotelId });
@@ -298,6 +323,8 @@ export const findHotelByIdAndUpdateBooking = async (
             .lean<HotelType>()
             .exec();
 
+        await CacheService.invalidate(CacheService.Keys.hotel(hotelId));
+
         if (!updatedHotel) {
             logger.warn('Hotel not found for booking', { hotelId });
             return null;
@@ -357,11 +384,19 @@ export const findBookingsByUserId = async (
         logger.info('Fetching bookings for user', { userId });
 
         // Find all hotels that have bookings for this user
-        const hotelsWithBookings = await Hotel.find({
-            bookings: { $elemMatch: { userId } },
-        })
-            .lean<HotelType[]>()
-            .exec();
+        const hotelsWithBookings =
+            (await CacheService.getOrSet<HotelType[]>(
+                CacheService.Keys.userBookings(userId),
+                async () =>
+                    await Hotel.find({
+                        bookings: { $elemMatch: { userId } },
+                    })
+                        .lean<HotelType[]>()
+                        .exec(),
+                {
+                    ttl: 3600, // Cache for 60 minutes
+                }
+            )) ?? [];
 
         // Filter to include only the user's bookings for each hotel
         const userBookings = hotelsWithBookings.map(hotel => {
