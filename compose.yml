@@ -64,6 +64,9 @@ services:
       - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
       - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
       - SECRET_KEY=${SECRET_KEY}
+    volumes:
+      - ./:/app
+      - /app/node_modules
     depends_on:
       - redis-cache
       - redis-queue
