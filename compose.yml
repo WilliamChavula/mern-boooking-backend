@@ -54,16 +54,6 @@ services:
       - "5050:5050"
     env_file:
       - ./.env
-    environment:
-      - MONGODB_URI=${MONGODB_URI}
-      - REDIS_CACHE_URL=${REDIS_CACHE_URL}
-      - REDIS_QUEUE_URL=${REDIS_QUEUE_URL}
-      - REDIS_RATE_LIMITER_URL=${REDIS_RATE_LIMITER_URL}
-      - CLOUDINARY_NAME=${CLOUDINARY_NAME}
-      - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
-      - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
-      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
-      - SECRET_KEY=${SECRET_KEY}
     volumes:
       - ./:/app
       - /app/node_modules
